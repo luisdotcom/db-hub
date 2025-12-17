@@ -1,0 +1,88 @@
+services:
+  # Servicio de Frontend
+  frontend:
+    build: ./frontend
+    container_name: mi-frontend
+    restart: always
+    ports:
+      - "9090:80"
+    depends_on:
+      - backend
+
+  # Servicio de Backend
+  backend:
+    build: ./backend
+    container_name: mi-backend
+    restart: always
+    ports:
+      - "9000:8000"
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=luisdotcom
+      - MYSQL_PASSWORD=!WH0wZ&MD1@QrbR
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=luisdotcom
+      - POSTGRES_PASSWORD=!WH0wZ&MD1@QrbR
+      - SQLSERVER_HOST=sqlserver
+      - SQLSERVER_PORT=1433
+      - SQLSERVER_USER=sa
+      - SQLSERVER_PASSWORD=!WH0wZ&MD1@QrbR
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - mysql
+      - postgres
+      - sqlserver
+
+  # Servicio de MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: mi-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: master
+      MYSQL_USER: luisdotcom
+      MYSQL_PASSWORD: "!WH0wZ&MD1@QrbR"
+    ports:
+      - "9306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+
+  # Servicio de PostgreSQL
+  postgres:
+    image: postgres:16
+    container_name: mi-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: luisdotcom
+      POSTGRES_PASSWORD: "!WH0wZ&MD1@QrbR"
+      POSTGRES_DB: master
+    ports:
+      - "9432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Servicio de SQL Server
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: mi-sqlserver
+    restart: always
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "!WH0wZ&MD1@QrbR"
+      MSSQL_PID: "Developer"
+    ports:
+      - "9433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+
+volumes:
+  mysql_data:
+  postgres_data:
+  sqlserver_data:

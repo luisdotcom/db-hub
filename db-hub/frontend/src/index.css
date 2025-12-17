@@ -1,0 +1,24 @@
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+
+  --card-bg: var(--surface);
+  --hover-bg: var(--surface-hover);
+  --border-color: var(--border);
+  --text-color: var(--text);
+  --text-secondary: var(--text-secondary);
+  --primary-color: var(--primary);
+  --primary-hover: var(--primary-hover);
+  --input-bg: var(--background);
+}
+
+#root {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}

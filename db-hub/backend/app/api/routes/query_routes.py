@@ -1,0 +1,317 @@
+"""
+Query execution routes.
+Clean REST API design with proper HTTP methods and status codes.
+"""
+from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
+from typing import List
+import logging
+import os
+
+from app.models import QueryRequest, QueryResponse, DatabaseType
+from app.services import database_service, export_service
+from app.core.exceptions import QueryExecutionError, DatabaseConnectionError
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/api/query", tags=["Query"])
+
+
+@router.post("/execute", response_model=QueryResponse, status_code=status.HTTP_200_OK)
+async def execute_query(request: QueryRequest) -> QueryResponse:
+    """
+    Execute a SQL query against the specified database.
+    
+    Args:
+        request: Query request containing database type and SQL query
+        
+    Returns:
+        Query execution results
+        
+    Raises:
+        HTTPException: If query execution fails
+    """
+    try:
+        columns, rows, rows_affected = database_service.execute_query(
+            db_type=request.database_type,
+            query=request.query,
+            connection_string=request.connection_string
+        )
+        
+        return QueryResponse(
+            success=True,
+            columns=columns,
+            rows=rows,
+            rows_affected=rows_affected,
+            message="Query executed successfully"
+        )
+        
+    except QueryExecutionError as e:
+        logger.error(f"Query execution error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except DatabaseConnectionError as e:
+        logger.error(f"Database connection error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred"
+        )
+
+
+@router.get("/databases/{database_type}", response_model=List[str])
+async def get_databases(database_type: DatabaseType) -> List[str]:
+    """
+    Get list of databases in the specified database server.
+    
+    Args:
+        database_type: Type of database (mysql, postgres, or sqlserver)
+        
+    Returns:
+        List of database names
+    """
+    try:
+        databases = database_service.get_databases(database_type)
+        return databases
+    except Exception as e:
+        logger.error(f"Error getting databases: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve databases: {str(e)}"
+        )
+
+
+@router.post("/databases/{database_type}", status_code=status.HTTP_201_CREATED)
+async def create_database(database_type: DatabaseType, database_name: str):
+    """
+    Create a new database in the specified database server.
+    
+    Args:
+        database_type: Type of database (mysql, postgres, or sqlserver)
+        database_name: Name of the database to create
+        
+    Returns:
+        Success message
+    """
+    try:
+        database_service.create_database(database_type, database_name)
+        return {"success": True, "message": f"Database '{database_name}' created successfully"}
+    except Exception as e:
+        logger.error(f"Error creating database: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to create database: {str(e)}"
+        )
+
+
+@router.put("/databases/{database_type}/select")
+async def select_database(database_type: DatabaseType, database_name: str):
+    """
+    Select/switch to a different database.
+    
+    Args:
+        database_type: Type of database (mysql, postgres, or sqlserver)
+        database_name: Name of the database to select
+        
+    Returns:
+        Success message
+    """
+    try:
+        database_service.select_database(database_type, database_name)
+        return {"success": True, "message": f"Switched to database '{database_name}'"}
+    except Exception as e:
+        logger.error(f"Error selecting database: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to select database: {str(e)}"
+        )
+
+
+@router.get("/tables/{database_type}", response_model=List[str])
+async def get_tables(database_type: DatabaseType) -> List[str]:
+    """
+    Get list of tables in the specified database.
+    
+    Args:
+        database_type: Type of database (mysql or postgres)
+        
+    Returns:
+        List of table names
+    """
+    try:
+        tables = database_service.get_tables(database_type)
+        return tables
+    except Exception as e:
+        logger.error(f"Error getting tables: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve tables: {str(e)}"
+        )
+
+
+@router.get("/schema/{database_type}/{table_name}")
+async def get_table_schema(database_type: DatabaseType, table_name: str):
+    """
+    Get schema information for a specific table.
+    
+    Args:
+        database_type: Type of database (mysql or postgres)
+        table_name: Name of the table
+        
+    Returns:
+        Table schema information
+    """
+    try:
+        schema = database_service.get_table_schema(database_type, table_name)
+        return {"table": table_name, "columns": schema}
+    except Exception as e:
+        logger.error(f"Error getting table schema: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve table schema: {str(e)}"
+        )
+
+
+@router.get("/views/{database_type}", response_model=List[str])
+async def get_views(database_type: DatabaseType) -> List[str]:
+    """
+    Get list of views in the specified database.
+    
+    Args:
+        database_type: Type of database
+        
+    Returns:
+        List of view names
+    """
+    try:
+        views = database_service.get_views(database_type)
+        return views
+    except Exception as e:
+        logger.error(f"Error getting views: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve views: {str(e)}"
+        )
+
+
+@router.get("/procedures/{database_type}")
+async def get_procedures(database_type: DatabaseType):
+    """
+    Get list of stored procedures in the specified database.
+    
+    Args:
+        database_type: Type of database
+        
+    Returns:
+        List of procedure information
+    """
+    try:
+        procedures = database_service.get_procedures(database_type)
+        return procedures
+    except Exception as e:
+        logger.error(f"Error getting procedures: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve procedures: {str(e)}"
+        )
+
+
+@router.get("/functions/{database_type}")
+async def get_functions(database_type: DatabaseType):
+    """
+    Get list of functions in the specified database.
+    
+    Args:
+        database_type: Type of database
+        
+    Returns:
+        List of function information
+    """
+    try:
+        functions = database_service.get_functions(database_type)
+        return functions
+    except Exception as e:
+        logger.error(f"Error getting functions: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve functions: {str(e)}"
+        )
+
+
+@router.get("/triggers/{database_type}")
+async def get_triggers(database_type: DatabaseType):
+    """
+    Get list of triggers in the specified database.
+    
+    Args:
+        database_type: Type of database
+        
+    Returns:
+        List of trigger information
+    """
+    try:
+        triggers = database_service.get_triggers(database_type)
+        return triggers
+    except Exception as e:
+        logger.error(f"Error getting triggers: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve triggers: {str(e)}"
+        )
+
+
+
+@router.get("/connection/test/{database_type}")
+async def test_connection(database_type: DatabaseType):
+    """
+    Test connection to the specified database.
+    
+    Args:
+        database_type: Type of database (mysql or postgres)
+        
+    Returns:
+        Connection status
+    """
+    try:
+        is_connected = database_service.test_connection(database_type)
+        return {
+            "database_type": database_type,
+            "connected": is_connected,
+            "message": "Connection successful" if is_connected else "Connection failed"
+        }
+    except Exception as e:
+        logger.error(f"Error testing connection: {str(e)}")
+        return {
+            "database_type": database_type,
+            "connected": False,
+            "message": str(e)
+        }
+
+
+@router.get("/export/{database_type}/{database_name}")
+async def export_database_endpoint(database_type: DatabaseType, database_name: str):
+    """
+    Export database to a SQL file.
+    """
+    try:
+        file_path = await export_service.export_database(database_type.value, database_name)
+        
+        return FileResponse(
+            path=file_path,
+            filename=f"{database_name}_backup.sql",
+            media_type='application/sql',
+            background=BackgroundTask(os.unlink, file_path)
+        )
+    except NotImplementedError as e:
+        raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail=str(e))
+    except Exception as e:
+        logger.error(f"Export error: {str(e)}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Export failed: {str(e)}")
