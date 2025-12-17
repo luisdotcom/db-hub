@@ -5,9 +5,12 @@ A modern, unified database management system for containerized databases (MySQL,
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
+<img width="2000" height="1000" alt="Document" src="https://github.com/user-attachments/assets/82a27020-7c0d-4745-9f31-8be3bd3c05de" />
+
 ## Features
 
 - **Multi-Database Support**: Connect to MySQL, PostgreSQL, and SQL Server
+- **Automatic Containerized Provisioning**: The system automatically spins up pre-configured Docker containers for each database type by default, ensuring a ready-to-use environment out of the box.
 - **Modern Web Interface**: Clean, responsive React-based UI with dark/light theme support
 - **Query Editor**: Syntax highlighting with sample queries for quick testing
 - **Real-time Results**: Execute queries and view results in formatted tables
@@ -52,13 +55,23 @@ git clone https://github.com/luisdotcom/db-hub.git
 cd db-hub/db-hub
 ```
 
-### 2. Start the databases
+### 2. Launch the Full Stack
+This command orchestrates the entire environment: the UI, the API, and all database engines.
 
 ```bash
-docker-compose up -d
+docker-compose up -d --build
 ```
 
-### 3. Start the backend
+> [!NOTE]
+> A single docker-compose up command initializes the full stack.
+>
+> This includes the Web Interface, the REST API, and a dedicated container for each supported database engine, ensuring a complete, isolated, and ready-to-use development environment.
+> 
+> Navigate to http://localhost:9090 to see the project running via Docker.
+
+
+## Local Development (Optional)
+### 1. Start the backend
 
 ```bash
 cd backend
@@ -69,7 +82,7 @@ pip install -r requirements.txt
 python -m app.main
 ```
 
-### 4. Start the frontend
+### 2. Start the frontend
 
 ```bash
 cd frontend
@@ -77,11 +90,12 @@ npm install
 npm run dev
 ```
 
-### 5. Open the app
+### 3. Open the app
 
 Navigate to http://localhost:5173 in your browser.
 
-**For detailed setup instructions, see [GETTING_STARTED.md](db-hub/GETTING_STARTED.md)**
+> [!TIP]
+> For detailed setup instructions, see [GETTING_STARTED.md](db-hub/GETTING_STARTED.md)
 
 ## Tech Stack
 
