@@ -226,6 +226,71 @@ class DatabaseService:
         except Exception as e:
             logger.error(f"Failed to create database {database_name} for {db_type.value}: {str(e)}")
             raise
+
+    def delete_database(self, db_type: DatabaseType, database_name: str, connection_string: Optional[str] = None) -> bool:
+        """
+        Delete (drop) a database.
+        
+        Args:
+            db_type: Type of database
+            database_name: Name of the database to delete
+            connection_string: Custom connection string (for custom database type)
+            
+        Returns:
+            True if database was deleted successfully
+        """
+        try:
+            if db_type == DatabaseType.CUSTOM and connection_string:
+                engine = create_engine(
+                    connection_string,
+                    pool_pre_ping=True,
+                    pool_recycle=3600
+                )
+                # Determine dialect from connection string
+                if 'mysql' in connection_string:
+                    dialect = DatabaseType.MYSQL
+                elif 'postgresql' in connection_string or 'postgres' in connection_string:
+                    dialect = DatabaseType.POSTGRES
+                elif 'mssql' in connection_string:
+                    dialect = DatabaseType.SQLSERVER
+                else:
+                    # Fallback or strict error
+                    dialect = DatabaseType.MYSQL # Default ? Or better logic
+            else:
+                engine = self._get_engine(db_type)
+                dialect = db_type
+            
+            with engine.connect() as connection:
+                
+                if dialect == DatabaseType.MYSQL:
+                    connection.execute(text(f"DROP DATABASE `{database_name}`"))
+                    connection.commit()
+                    
+                elif dialect == DatabaseType.POSTGRES:
+                    conn = connection.execution_options(isolation_level="AUTOCOMMIT")
+                    conn.execute(text(f"""
+                        SELECT pg_terminate_backend(pid)
+                        FROM pg_stat_activity
+                        WHERE datname = '{database_name}' AND pid <> pg_backend_pid()
+                    """))
+                    conn.execute(text(f'DROP DATABASE "{database_name}"'))
+                    
+                elif dialect == DatabaseType.SQLSERVER:
+                    conn = connection.execution_options(isolation_level="AUTOCOMMIT")
+                    conn.execute(text(f"""
+                        ALTER DATABASE [{database_name}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+                        DROP DATABASE [{database_name}];
+                    """))
+                    
+                else:
+                    raise InvalidDatabaseTypeError(f"Unsupported database type: {dialect}")
+                
+                logger.info(f"Deleted database {database_name} on {db_type.value}")
+                return True
+        except Exception as e:
+            logger.error(f"Failed to delete database {database_name} for {db_type.value}: {str(e)}")
+            raise
+
     
     def select_database(self, db_type: DatabaseType, database_name: str) -> bool:
         """

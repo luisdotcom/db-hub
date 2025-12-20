@@ -10,8 +10,9 @@ A modern, unified database management system for containerized databases (MySQL,
 ## Features
 
 - **Multi-Database Support**: Connect to MySQL, PostgreSQL, and SQL Server
-- **Automatic Containerized Provisioning**: The system automatically spins up pre-configured Docker containers for each database type by default, ensuring a ready-to-use environment out of the box.
+- **Use Autononous Containers**: The system automatically spins up pre-configured Docker containers for each database type by default, ensuring a ready-to-use environment out of the box.
 - **Modern Web Interface**: Clean, responsive React-based UI with dark/light theme support
+- **Progressive Web App (PWA)**: Installable as a native-like app with offline capabilities
 - **Query Editor**: Syntax highlighting with sample queries for quick testing
 - **Real-time Results**: Execute queries and view results in formatted tables
 - **Database Export**: Export your databases to SQL files with a single click
@@ -108,6 +109,7 @@ Navigate to http://localhost:5173 in your browser.
 ### Frontend
 - **React 18** - UI library
 - **Vite** - Build tool
+- **Vite PWA** - PWA Support
 - **Axios** - HTTP client
 - **Lucide React** - Icons
 - **React Syntax Highlighter** - Code highlighting

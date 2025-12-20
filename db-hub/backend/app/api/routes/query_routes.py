@@ -112,6 +112,31 @@ async def create_database(database_type: DatabaseType, database_name: str):
         )
 
 
+@router.delete("/databases/{database_type}", status_code=status.HTTP_200_OK)
+async def delete_database(database_type: DatabaseType, database_name: str, connection_string: str = None):
+    """
+    Delete a database in the specified database server.
+    
+    Args:
+        database_type: Type of database (mysql, postgres, sqlserver, or custom)
+        database_name: Name of the database to delete
+        connection_string: Optional custom connection string
+        
+    Returns:
+        Success message
+    """
+    try:
+        database_service.delete_database(database_type, database_name, connection_string)
+        return {"success": True, "message": f"Database '{database_name}' deleted successfully"}
+    except Exception as e:
+        logger.error(f"Error deleting database: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to delete database: {str(e)}"
+        )
+
+
+
 @router.put("/databases/{database_type}/select")
 async def select_database(database_type: DatabaseType, database_name: str):
     """

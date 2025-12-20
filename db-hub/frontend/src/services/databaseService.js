@@ -48,6 +48,16 @@ export const createDatabase = async (databaseType, databaseName) => {
 };
 
 
+export const deleteDatabase = async (databaseType, databaseName, connectionString = null) => {
+  let url = `/api/query/databases/${databaseType}?database_name=${encodeURIComponent(databaseName)}`;
+  if (connectionString) {
+    url += `&connection_string=${encodeURIComponent(connectionString)}`;
+  }
+  const response = await apiClient.delete(url);
+  return response.data;
+};
+
+
 export const getConnectionStringForDb = (connectionString, dbName) => {
   if (!connectionString || !dbName) return connectionString;
   const type = getDbTypeFromStr(connectionString);

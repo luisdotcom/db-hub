@@ -8,6 +8,7 @@ A modern, responsive React application for database query execution.
 
 - **React 18**: UI framework
 - **Vite**: Build tool and dev server
+- **Vite PWA**: PWA support (Service Worker, Manifest)
 - **Axios**: HTTP client
 - **Lucide React**: Icon library
 - **CSS Variables**: Theme management
@@ -182,6 +183,11 @@ Functions include documentation:
 - ARIA labels for buttons
 - Keyboard navigation support
 - Focus management
+
+## PWA Support
+- **Installable**: Can be installed as a standalone app on Desktop and Mobile.
+- **Offline Capable**: Resources are cached via Service Worker.
+- **Auto Update**: checks for updates automatically.
 
 ## Browser Support
 

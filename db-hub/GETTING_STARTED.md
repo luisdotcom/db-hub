@@ -160,6 +160,7 @@ docker-compose up -d
 2. Try different SQL queries on each database
 3. Check out the project structure in the main [README.md](../README.md)
 4. Customize theme colors in CSS variables
+5. **Install as App**: This application is a Progressive Web App (PWA). You can install it on your desktop or mobile device for an app-like experience. Look for the "Install" icon in your browser's address bar.
 
 ## Getting Help
 
