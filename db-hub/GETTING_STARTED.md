@@ -67,6 +67,16 @@ The easiest way to run the entire application (Frontend + Backend + Databases) i
  
  **Frontend running at:** http://localhost:5173 (Manual) or http://localhost:9090 (Docker)
 
+## Authentication
+
+The application is protected by a login system.
+
+**Default Credentials:**
+- **Username:** `developer`
+- **Password:** `this-is-a-secure-password-100%`
+
+You can change these in the `.env` file (see `.env.example`).
+
 ## Your First Query
 
 1. Open http://localhost:5173 in your browser

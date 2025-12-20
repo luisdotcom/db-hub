@@ -251,7 +251,6 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
     setDeleting(dbName);
     try {
       const isCustom = selectedDatabase && selectedDatabase.startsWith('custom');
-      // For custom DBs, pass 'custom' as type and the connection string
       const dbType = isCustom ? 'custom' : selectedDatabase;
       const connStr = isCustom ? customConnection : null;
 
@@ -499,7 +498,6 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
                             </svg>
                           </button>
                         </CustomTooltip>
-                        {/* Only show delete button if database is NOT the current active one */}
                         {currentDatabase !== db && (
                           <CustomTooltip text="Delete database">
                             <button

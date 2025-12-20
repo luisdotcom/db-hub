@@ -4,11 +4,14 @@ import Header from './components/Header';
 import DatabaseExplorer from './components/DatabaseExplorer';
 import QueryEditor from './components/QueryEditor';
 import QueryResults from './components/QueryResults';
+import Login from './components/Login';
 import { executeQuery, getConnectionStringForDb } from './services/databaseService';
 import { useToast } from './contexts/ToastContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import './App.css';
 
-function App() {
+function AppContent() {
+  const { isAuthenticated, isLoading } = useAuth();
   const [selectedDatabase, setSelectedDatabase] = useState('mysql');
   const [customConnection, setCustomConnection] = useState('');
   const [currentDbName, setCurrentDbName] = useState(null);
@@ -91,6 +94,25 @@ function App() {
     toast.info(`Selected ${type}: ${name}`);
   };
 
+  if (isLoading) {
+    return (
+      <div className="app" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh',
+        fontSize: '14px',
+        color: 'var(--text-secondary)'
+      }}>
+        Loading...
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
   return (
     <div className="app">
       <Header
@@ -123,6 +145,14 @@ function App() {
         </div>
       </main>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

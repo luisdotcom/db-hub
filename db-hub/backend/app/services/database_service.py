@@ -1,8 +1,3 @@
-"""
-Database service layer.
-Implements clean architecture with separation of concerns.
-Handles all database operations and connection management.
-"""
 from typing import Dict, Any, List, Optional, Tuple
 from sqlalchemy import create_engine, text, inspect
 from sqlalchemy.engine import Engine
@@ -21,13 +16,8 @@ logger = logging.getLogger(__name__)
 
 
 class DatabaseService:
-    """
-    Service class for database operations.
-    Follows single responsibility principle - handles only database interactions.
-    """
     
     def __init__(self):
-        """Initialize database connections."""
         self._engines: Dict[DatabaseType, Optional[Engine]] = {
             DatabaseType.MYSQL: None,
             DatabaseType.POSTGRES: None,
@@ -36,18 +26,6 @@ class DatabaseService:
         self._custom_engines: Dict[str, Engine] = {}
     
     def _get_connection_string(self, db_type: DatabaseType) -> str:
-        """
-        Get connection string for specified database type.
-        
-        Args:
-            db_type: Type of database
-            
-        Returns:
-            Connection string
-            
-        Raises:
-            InvalidDatabaseTypeError: If database type is not supported
-        """
         if db_type == DatabaseType.MYSQL:
             return settings.mysql_connection_string
         elif db_type == DatabaseType.SQLSERVER:
@@ -58,18 +36,6 @@ class DatabaseService:
             raise InvalidDatabaseTypeError(f"Unsupported database type: {db_type}")
     
     def _get_engine(self, db_type: DatabaseType) -> Engine:
-        """
-        Get or create database engine for specified type.
-        
-        Args:
-            db_type: Type of database
-            
-        Returns:
-            SQLAlchemy Engine instance
-            
-        Raises:
-            DatabaseConnectionError: If connection fails
-        """
         if self._engines[db_type] is None:
             try:
                 connection_string = self._get_connection_string(db_type)
@@ -86,15 +52,6 @@ class DatabaseService:
         return self._engines[db_type]
     
     def test_connection(self, db_type: DatabaseType) -> bool:
-        """
-        Test database connection.
-        
-        Args:
-            db_type: Type of database to test
-            
-        Returns:
-            True if connection successful, False otherwise
-        """
         try:
             engine = self._get_engine(db_type)
             with engine.connect() as connection:
@@ -110,20 +67,6 @@ class DatabaseService:
         query: str,
         connection_string: Optional[str] = None
     ) -> Tuple[Optional[List[str]], Optional[List[Dict[str, Any]]], Optional[int]]:
-        """
-        Execute a SQL query and return results.
-        
-        Args:
-            db_type: Type of database to query
-            query: SQL query to execute
-            connection_string: Custom connection string (for custom database type)
-            
-        Returns:
-            Tuple of (columns, rows, rows_affected)
-            
-        Raises:
-            QueryExecutionError: If query execution fails
-        """
         try:
 
             if db_type == DatabaseType.CUSTOM and connection_string:
@@ -158,15 +101,6 @@ class DatabaseService:
             raise QueryExecutionError(f"Unexpected error: {str(e)}")
     
     def get_databases(self, db_type: DatabaseType) -> List[str]:
-        """
-        Get list of databases in the database server.
-        
-        Args:
-            db_type: Type of database
-            
-        Returns:
-            List of database names
-        """
         try:
             engine = self._get_engine(db_type)
             with engine.connect() as connection:
@@ -194,16 +128,6 @@ class DatabaseService:
             return []
     
     def create_database(self, db_type: DatabaseType, database_name: str) -> bool:
-        """
-        Create a new database.
-        
-        Args:
-            db_type: Type of database
-            database_name: Name of the database to create
-            
-        Returns:
-            True if database was created successfully
-        """
         try:
             engine = self._get_engine(db_type)
             with engine.connect() as connection:
@@ -228,17 +152,6 @@ class DatabaseService:
             raise
 
     def delete_database(self, db_type: DatabaseType, database_name: str, connection_string: Optional[str] = None) -> bool:
-        """
-        Delete (drop) a database.
-        
-        Args:
-            db_type: Type of database
-            database_name: Name of the database to delete
-            connection_string: Custom connection string (for custom database type)
-            
-        Returns:
-            True if database was deleted successfully
-        """
         try:
             if db_type == DatabaseType.CUSTOM and connection_string:
                 engine = create_engine(
@@ -246,7 +159,6 @@ class DatabaseService:
                     pool_pre_ping=True,
                     pool_recycle=3600
                 )
-                # Determine dialect from connection string
                 if 'mysql' in connection_string:
                     dialect = DatabaseType.MYSQL
                 elif 'postgresql' in connection_string or 'postgres' in connection_string:
@@ -254,8 +166,7 @@ class DatabaseService:
                 elif 'mssql' in connection_string:
                     dialect = DatabaseType.SQLSERVER
                 else:
-                    # Fallback or strict error
-                    dialect = DatabaseType.MYSQL # Default ? Or better logic
+                    dialect = DatabaseType.MYSQL 
             else:
                 engine = self._get_engine(db_type)
                 dialect = db_type
@@ -293,16 +204,6 @@ class DatabaseService:
 
     
     def select_database(self, db_type: DatabaseType, database_name: str) -> bool:
-        """
-        Select/switch to a different database by recreating the engine.
-        
-        Args:
-            db_type: Type of database
-            database_name: Name of the database to select
-            
-        Returns:
-            True if database was selected successfully
-        """
         try:
 
             if self._engines[db_type] is not None:
@@ -346,15 +247,6 @@ class DatabaseService:
             raise
 
     def get_tables(self, db_type: DatabaseType) -> List[str]:
-        """
-        Get list of tables in the database.
-        
-        Args:
-            db_type: Type of database
-            
-        Returns:
-            List of table names
-        """
         try:
             engine = self._get_engine(db_type)
             inspector = inspect(engine)
@@ -364,16 +256,6 @@ class DatabaseService:
             return []
     
     def get_table_schema(self, db_type: DatabaseType, table_name: str) -> List[Dict[str, Any]]:
-        """
-        Get schema information for a specific table.
-        
-        Args:
-            db_type: Type of database
-            table_name: Name of the table
-            
-        Returns:
-            List of column information dictionaries
-        """
         try:
             engine = self._get_engine(db_type)
             inspector = inspect(engine)
@@ -393,15 +275,6 @@ class DatabaseService:
             return []
     
     def get_views(self, db_type: DatabaseType) -> List[str]:
-        """
-        Get list of views in the database.
-        
-        Args:
-            db_type: Type of database
-            
-        Returns:
-            List of view names
-        """
         try:
             engine = self._get_engine(db_type)
             inspector = inspect(engine)
@@ -411,15 +284,6 @@ class DatabaseService:
             return []
     
     def get_procedures(self, db_type: DatabaseType) -> List[Dict[str, Any]]:
-        """
-        Get list of stored procedures in the database.
-        
-        Args:
-            db_type: Type of database
-            
-        Returns:
-            List of procedure information
-        """
         try:
             engine = self._get_engine(db_type)
             with engine.connect() as connection:
@@ -448,15 +312,6 @@ class DatabaseService:
             return []
     
     def get_functions(self, db_type: DatabaseType) -> List[Dict[str, Any]]:
-        """
-        Get list of functions in the database.
-        
-        Args:
-            db_type: Type of database
-            
-        Returns:
-            List of function information
-        """
         try:
             engine = self._get_engine(db_type)
             with engine.connect() as connection:
@@ -485,15 +340,6 @@ class DatabaseService:
             return []
     
     def get_triggers(self, db_type: DatabaseType) -> List[Dict[str, Any]]:
-        """
-        Get list of triggers in the database.
-        
-        Args:
-            db_type: Type of database
-            
-        Returns:
-            List of trigger information
-        """
         try:
             engine = self._get_engine(db_type)
             with engine.connect() as connection:
@@ -523,7 +369,6 @@ class DatabaseService:
             return []
     
     def close_connections(self):
-        """Close all database connections."""
         for db_type, engine in self._engines.items():
             if engine is not None:
                 engine.dispose()

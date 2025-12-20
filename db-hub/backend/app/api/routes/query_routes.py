@@ -1,7 +1,3 @@
-"""
-Query execution routes.
-Clean REST API design with proper HTTP methods and status codes.
-"""
 from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
@@ -20,18 +16,6 @@ router = APIRouter(prefix="/api/query", tags=["Query"])
 
 @router.post("/execute", response_model=QueryResponse, status_code=status.HTTP_200_OK)
 async def execute_query(request: QueryRequest) -> QueryResponse:
-    """
-    Execute a SQL query against the specified database.
-    
-    Args:
-        request: Query request containing database type and SQL query
-        
-    Returns:
-        Query execution results
-        
-    Raises:
-        HTTPException: If query execution fails
-    """
     try:
         columns, rows, rows_affected = database_service.execute_query(
             db_type=request.database_type,
@@ -69,15 +53,6 @@ async def execute_query(request: QueryRequest) -> QueryResponse:
 
 @router.get("/databases/{database_type}", response_model=List[str])
 async def get_databases(database_type: DatabaseType) -> List[str]:
-    """
-    Get list of databases in the specified database server.
-    
-    Args:
-        database_type: Type of database (mysql, postgres, or sqlserver)
-        
-    Returns:
-        List of database names
-    """
     try:
         databases = database_service.get_databases(database_type)
         return databases
@@ -91,16 +66,6 @@ async def get_databases(database_type: DatabaseType) -> List[str]:
 
 @router.post("/databases/{database_type}", status_code=status.HTTP_201_CREATED)
 async def create_database(database_type: DatabaseType, database_name: str):
-    """
-    Create a new database in the specified database server.
-    
-    Args:
-        database_type: Type of database (mysql, postgres, or sqlserver)
-        database_name: Name of the database to create
-        
-    Returns:
-        Success message
-    """
     try:
         database_service.create_database(database_type, database_name)
         return {"success": True, "message": f"Database '{database_name}' created successfully"}
@@ -114,17 +79,6 @@ async def create_database(database_type: DatabaseType, database_name: str):
 
 @router.delete("/databases/{database_type}", status_code=status.HTTP_200_OK)
 async def delete_database(database_type: DatabaseType, database_name: str, connection_string: str = None):
-    """
-    Delete a database in the specified database server.
-    
-    Args:
-        database_type: Type of database (mysql, postgres, sqlserver, or custom)
-        database_name: Name of the database to delete
-        connection_string: Optional custom connection string
-        
-    Returns:
-        Success message
-    """
     try:
         database_service.delete_database(database_type, database_name, connection_string)
         return {"success": True, "message": f"Database '{database_name}' deleted successfully"}
@@ -139,16 +93,6 @@ async def delete_database(database_type: DatabaseType, database_name: str, conne
 
 @router.put("/databases/{database_type}/select")
 async def select_database(database_type: DatabaseType, database_name: str):
-    """
-    Select/switch to a different database.
-    
-    Args:
-        database_type: Type of database (mysql, postgres, or sqlserver)
-        database_name: Name of the database to select
-        
-    Returns:
-        Success message
-    """
     try:
         database_service.select_database(database_type, database_name)
         return {"success": True, "message": f"Switched to database '{database_name}'"}
@@ -162,15 +106,6 @@ async def select_database(database_type: DatabaseType, database_name: str):
 
 @router.get("/tables/{database_type}", response_model=List[str])
 async def get_tables(database_type: DatabaseType) -> List[str]:
-    """
-    Get list of tables in the specified database.
-    
-    Args:
-        database_type: Type of database (mysql or postgres)
-        
-    Returns:
-        List of table names
-    """
     try:
         tables = database_service.get_tables(database_type)
         return tables
@@ -184,16 +119,6 @@ async def get_tables(database_type: DatabaseType) -> List[str]:
 
 @router.get("/schema/{database_type}/{table_name}")
 async def get_table_schema(database_type: DatabaseType, table_name: str):
-    """
-    Get schema information for a specific table.
-    
-    Args:
-        database_type: Type of database (mysql or postgres)
-        table_name: Name of the table
-        
-    Returns:
-        Table schema information
-    """
     try:
         schema = database_service.get_table_schema(database_type, table_name)
         return {"table": table_name, "columns": schema}
@@ -207,15 +132,6 @@ async def get_table_schema(database_type: DatabaseType, table_name: str):
 
 @router.get("/views/{database_type}", response_model=List[str])
 async def get_views(database_type: DatabaseType) -> List[str]:
-    """
-    Get list of views in the specified database.
-    
-    Args:
-        database_type: Type of database
-        
-    Returns:
-        List of view names
-    """
     try:
         views = database_service.get_views(database_type)
         return views
@@ -229,15 +145,6 @@ async def get_views(database_type: DatabaseType) -> List[str]:
 
 @router.get("/procedures/{database_type}")
 async def get_procedures(database_type: DatabaseType):
-    """
-    Get list of stored procedures in the specified database.
-    
-    Args:
-        database_type: Type of database
-        
-    Returns:
-        List of procedure information
-    """
     try:
         procedures = database_service.get_procedures(database_type)
         return procedures
@@ -251,15 +158,6 @@ async def get_procedures(database_type: DatabaseType):
 
 @router.get("/functions/{database_type}")
 async def get_functions(database_type: DatabaseType):
-    """
-    Get list of functions in the specified database.
-    
-    Args:
-        database_type: Type of database
-        
-    Returns:
-        List of function information
-    """
     try:
         functions = database_service.get_functions(database_type)
         return functions
@@ -273,15 +171,6 @@ async def get_functions(database_type: DatabaseType):
 
 @router.get("/triggers/{database_type}")
 async def get_triggers(database_type: DatabaseType):
-    """
-    Get list of triggers in the specified database.
-    
-    Args:
-        database_type: Type of database
-        
-    Returns:
-        List of trigger information
-    """
     try:
         triggers = database_service.get_triggers(database_type)
         return triggers
@@ -296,15 +185,6 @@ async def get_triggers(database_type: DatabaseType):
 
 @router.get("/connection/test/{database_type}")
 async def test_connection(database_type: DatabaseType):
-    """
-    Test connection to the specified database.
-    
-    Args:
-        database_type: Type of database (mysql or postgres)
-        
-    Returns:
-        Connection status
-    """
     try:
         is_connected = database_service.test_connection(database_type)
         return {
@@ -323,9 +203,6 @@ async def test_connection(database_type: DatabaseType):
 
 @router.get("/export/{database_type}/{database_name}")
 async def export_database_endpoint(database_type: DatabaseType, database_name: str):
-    """
-    Export database to a SQL file.
-    """
     try:
         file_path = await export_service.export_database(database_type.value, database_name)
         

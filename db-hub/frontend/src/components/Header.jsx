@@ -1,7 +1,8 @@
 
 import { useState, useRef, useEffect } from 'react';
-import { Sun, Moon, Database, ChevronDown, Check, Container, Plus, Trash2, X, Github, Play, AlertCircle, Loader2 } from 'lucide-react';
+import { Sun, Moon, Database, ChevronDown, Check, Container, Plus, Trash2, X, Github, Play, AlertCircle, Loader2, LogOut } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import logo from '../assets/logo.png';
 import { executeQuery } from '../services/databaseService';
 import './Header.css';
@@ -10,6 +11,7 @@ const STORAGE_KEY = 'DBHub_custom_connections';
 
 const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
   const { theme, toggleTheme } = useTheme();
+  const { logout } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [customConnections, setCustomConnections] = useState([]);
@@ -193,6 +195,14 @@ const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
   return (
     <header className="header">
       <div className="header-content">
@@ -301,6 +311,15 @@ const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
               </div>
             )}
           </div>
+
+          <button
+            className="theme-toggle"
+            onClick={handleLogout}
+            aria-label="Logout"
+            title="Logout"
+          >
+            <LogOut size={20} />
+          </button>
         </div>
       </div>
 

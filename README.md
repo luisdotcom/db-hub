@@ -11,6 +11,7 @@ A modern, unified database management system for containerized databases (MySQL,
 
 - **Multi-Database Support**: Connect to MySQL, PostgreSQL, and SQL Server
 - **Use Autononous Containers**: The system automatically spins up pre-configured Docker containers for each database type by default, ensuring a ready-to-use environment out of the box.
+- **Secure Authentication**: Built-in login system with session management and HTTP-only cookies
 - **Modern Web Interface**: Clean, responsive React-based UI with dark/light theme support
 - **Progressive Web App (PWA)**: Installable as a native-like app with offline capabilities
 - **Query Editor**: Syntax highlighting with sample queries for quick testing
@@ -105,6 +106,7 @@ Navigate to http://localhost:5173 in your browser.
 - **SQLAlchemy** - Database ORM
 - **Uvicorn** - ASGI server
 - **Pydantic** - Data validation
+- **python-jose** - JWT Authentication
 
 ### Frontend
 - **React 18** - UI library

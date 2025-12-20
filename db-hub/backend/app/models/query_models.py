@@ -1,14 +1,9 @@
-"""
-Data models for query operations.
-Using Pydantic for validation and clean data structures.
-"""
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 from enum import Enum
 
 
 class DatabaseType(str, Enum):
-    """Supported database types."""
     MYSQL = "mysql"
     POSTGRES = "postgres"
     SQLSERVER = "sqlserver"
@@ -16,7 +11,6 @@ class DatabaseType(str, Enum):
 
 
 class QueryRequest(BaseModel):
-    """Request model for executing a database query."""
     connection_string: Optional[str] = Field(None, description="Custom connection string (for custom database type)")
     database_type: DatabaseType = Field(..., description="Type of database to query")
     query: str = Field(..., min_length=1, description="SQL query to execute")
@@ -31,7 +25,6 @@ class QueryRequest(BaseModel):
 
 
 class QueryResponse(BaseModel):
-    """Response model for query execution results."""
     success: bool = Field(..., description="Whether the query executed successfully")
     columns: Optional[List[str]] = Field(None, description="Column names from the result")
     rows: Optional[List[Dict[str, Any]]] = Field(None, description="Query result rows")
@@ -54,7 +47,6 @@ class QueryResponse(BaseModel):
 
 
 class DatabaseInfo(BaseModel):
-    """Information about a database connection."""
     database_type: DatabaseType
     host: str
     port: int

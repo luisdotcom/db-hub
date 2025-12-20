@@ -1,13 +1,11 @@
-"""
-Main application module.
-FastAPI application with clean architecture and CORS configuration.
-"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 
 from app.config import settings
 from app.api.routes import query_router
+from app.api.routes.auth_routes import router as auth_router
+from app.core.auth_middleware import AuthMiddleware
 
 
 logging.basicConfig(
@@ -27,6 +25,10 @@ app = FastAPI(
 )
 
 
+
+app.add_middleware(AuthMiddleware)
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
@@ -36,12 +38,12 @@ app.add_middleware(
 )
 
 
+app.include_router(auth_router)
 app.include_router(query_router)
 
 
 @app.get("/")
 async def root():
-    """Root endpoint."""
     return {
         "message": "Database Query API",
         "version": "1.0.0",
@@ -51,7 +53,6 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint."""
     return {"status": "healthy"}
 
 

@@ -1,16 +1,9 @@
-"""
-Configuration module for application settings.
-Follows clean code principles with clear separation of concerns.
-"""
 from pydantic_settings import BaseSettings
 from typing import List
 from urllib.parse import quote_plus
 
 
 class Settings(BaseSettings):
-    """Application settings loaded from environment variables."""
-    
-
     mysql_host: str = "localhost"
     mysql_port: int = 9306
     mysql_user: str = "luisdotcom"
@@ -36,13 +29,16 @@ class Settings(BaseSettings):
     api_port: int = 9000
     cors_origins: str = "http://localhost:5173,http://localhost:9090,http://127.0.0.1:5173,http://127.0.0.1:9090,http://localhost:3000"
     
+    auth_username: str = "developer"
+    auth_password: str = "this-is-a-secure-password-100%"
+    session_secret: str = "change-this-secret-in-production-use-a-random-string"
+    
     class Config:
         env_file = ".env"
         case_sensitive = False
     
     @property
     def mysql_connection_string(self) -> str:
-        """Generate MySQL connection string."""
 
         encoded_password = quote_plus(self.mysql_password)
         return (
@@ -52,7 +48,6 @@ class Settings(BaseSettings):
     
     @property
     def postgres_connection_string(self) -> str:
-        """Generate PostgreSQL connection string."""
 
         encoded_password = quote_plus(self.postgres_password)
         return (
@@ -62,7 +57,6 @@ class Settings(BaseSettings):
     
     @property
     def sqlserver_connection_string(self) -> str:
-        """Generate SQL Server connection string."""
 
         encoded_password = quote_plus(self.sqlserver_password)
         return (
@@ -73,7 +67,6 @@ class Settings(BaseSettings):
     
     @property
     def cors_origins_list(self) -> List[str]:
-        """Parse CORS origins from comma-separated string."""
         return [origin.strip() for origin in self.cors_origins.split(",")]
 
 

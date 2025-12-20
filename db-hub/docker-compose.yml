@@ -31,6 +31,9 @@ services:
       - SQLSERVER_PORT=1433
       - SQLSERVER_USER=sa
       - SQLSERVER_PASSWORD=!WH0wZ&MD1@QrbR
+      - AUTH_USERNAME=developer
+      - AUTH_PASSWORD=this-is-a-secure-password-100%
+      - SESSION_SECRET=your-production-secret-change-this-to-random-string
     volumes:
       - ./backend:/app
     depends_on:

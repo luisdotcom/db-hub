@@ -12,10 +12,6 @@ from sqlalchemy.schema import CreateTable
 import datetime
 
 async def _export_sqlserver(db_name: str, output_path: str):
-    """
-    Export SQL Server database using SQLAlchemy reflection.
-    Generates a SQL script with creating tables and inserting data.
-    """
 
     base_conn = settings.sqlserver_connection_string
     if '?' in base_conn:
@@ -112,10 +108,6 @@ async def _export_sqlserver(db_name: str, output_path: str):
             engine.dispose()
 
 async def export_database(db_type: str, db_name: str) -> Optional[str]:
-    """
-    Export database to a temporary SQL file.
-    Returns the path to the temporary file.
-    """
     tmp_file = tempfile.NamedTemporaryFile(suffix=".sql", delete=False)
     tmp_path = tmp_file.name
     tmp_file.close()
