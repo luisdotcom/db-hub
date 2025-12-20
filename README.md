@@ -14,7 +14,7 @@ A modern, unified database management system for containerized databases (MySQL,
 - **Secure Authentication**: Built-in login system with session management and HTTP-only cookies
 - **Modern Web Interface**: Clean, responsive React-based UI with dark/light theme support
 - **Progressive Web App (PWA)**: Installable as a native-like app with offline capabilities
-- **Query Editor**: Syntax highlighting with sample queries for quick testing
+- **Query Editor**: Syntax highlighting, automatic formatting, and sample queries for quick testing
 - **Real-time Results**: Execute queries and view results in formatted tables
 - **Database Export**: Export your databases to SQL files with a single click
 - **Docker-Ready**: Full-stack Docker Compose setup (Frontend, Backend, Databases)
@@ -115,6 +115,7 @@ Navigate to http://localhost:5173 in your browser.
 - **Axios** - HTTP client
 - **Lucide React** - Icons
 - **React Syntax Highlighter** - Code highlighting
+- **SQL Formatter** - Query formatting
 
 ### Databases & Services
 - **mi-frontend**: React Frontend (Port 9090/5173)

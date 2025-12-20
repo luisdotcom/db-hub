@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { Play, Loader, FileText, Table, Eye, Zap, Code, ChevronUp, ChevronDown } from 'lucide-react';
+import { Play, Loader, FileText, Table, Eye, Zap, Code, ChevronUp, ChevronDown, AlignLeft } from 'lucide-react';
+import { format } from 'sql-formatter';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -62,6 +63,20 @@ const QueryEditor = ({ onExecute, isExecuting, selectedDatabase, externalQuery, 
       setTimeout(() => {
         e.target.selectionStart = e.target.selectionEnd = start + 2;
       }, 0);
+    }
+  };
+
+  const handleFormat = () => {
+    if (!query.trim()) return;
+    try {
+      const formatted = format(query, {
+        language: selectedDatabase === 'postgres' ? 'postgresql' :
+          selectedDatabase === 'sqlserver' ? 'transactsql' : 'mysql',
+        keywordCase: 'upper',
+      });
+      setQuery(formatted);
+    } catch (error) {
+      console.error('Error formatting query:', error);
     }
   };
 
@@ -254,6 +269,15 @@ END;`
           SQL Query
         </h2>
         <div className="help-buttons">
+          <button
+            className="help-btn"
+            onClick={handleFormat}
+            disabled={!query.trim()}
+            title="Format Query"
+          >
+            <AlignLeft size={16} />
+            <span>Format</span>
+          </button>
           <button
             className="help-btn"
             onClick={() => loadTemplate('tables')}
