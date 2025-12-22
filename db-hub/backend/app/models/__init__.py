@@ -3,12 +3,14 @@ from app.models.query_models import (
     DatabaseType,
     QueryRequest,
     QueryResponse,
-    DatabaseInfo
+    DatabaseInfo,
+    ExportOptions
 )
 
 __all__ = [
     "DatabaseType",
     "QueryRequest",
     "QueryResponse",
-    "DatabaseInfo"
+    "DatabaseInfo",
+    "ExportOptions"
 ]

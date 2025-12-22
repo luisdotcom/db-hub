@@ -156,10 +156,76 @@ button {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  overflow-y: auto;
-  overflow-x: hidden;
   padding: 16px;
+  height: 100%;
+  overflow: hidden;
   animation: fadeIn var(--transition-slow) ease-out;
+}
+
+.layout-split .query-editor,
+.layout-split .query-results {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden; 
+  transition: flex var(--transition-normal), height var(--transition-normal);
+}
+
+.layout-editor-full .query-editor {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.layout-editor-full .query-results {
+  flex: 0 0 auto;
+  min-height: auto;
+  flex-basis: auto;
+  overflow: visible;
+}
+
+.layout-results-full .query-results {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.layout-results-full .query-editor {
+  flex: 0 0 auto;
+  min-height: auto;
+  flex-basis: auto;
+  overflow: visible;
+}
+
+.layout-collapsed-both .query-editor,
+.layout-collapsed-both .query-results {
+  flex: 0 0 auto;
+  min-height: auto;
+}
+
+.query-editor, .query-results {
+  width: 100%;
+}
+
+.query-editor {
+  flex-shrink: 1 !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.query-editor:not(.collapsed) .code-editor-container {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.query-editor:not(.collapsed) .code-editor-container > div:first-child {
+  flex: 1;
+  height: 100% !important; 
+}
+
+.query-editor.collapsed,
+.query-results.collapsed {
+  min-height: auto !important;
+  flex: 0 0 auto !important;
+  overflow: visible;
 }
 
 

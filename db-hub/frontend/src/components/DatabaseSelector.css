@@ -170,7 +170,7 @@
 }
 
 .test-button-main:hover:not(:disabled) {
-  background: var(--primary-hover);
+  filter: brightness(1.1);
 }
 
 .test-button-main:disabled {

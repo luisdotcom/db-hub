@@ -190,15 +190,19 @@ export const getTriggers = async (databaseType, connectionString = null) => {
 };
 
 
-export const exportDatabase = async (databaseType, databaseName) => {
-  const response = await apiClient.get(`/api/query/export/${databaseType}/${databaseName}`, {
+export const exportDatabase = async (databaseType, databaseName, options = {}, connectionString = null) => {
+  let url = `/api/query/export/${databaseType}/${databaseName}`;
+  if (connectionString) {
+    url += `?connection_string=${encodeURIComponent(connectionString)}`;
+  }
+  const response = await apiClient.post(url, options, {
     responseType: 'blob'
   });
   
 
-  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
   const link = document.createElement('a');
-  link.href = url;
+  link.href = blobUrl;
   link.setAttribute('download', `${databaseName}_backup.sql`);
   document.body.appendChild(link);
   link.click();

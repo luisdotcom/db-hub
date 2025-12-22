@@ -52,3 +52,12 @@ class DatabaseInfo(BaseModel):
     port: int
     database: str
     status: str
+
+
+class ExportOptions(BaseModel):
+    include_data: bool = True
+    tables: List[str] = Field(default_factory=list)
+    views: List[str] = Field(default_factory=list)
+    procedures: List[str] = Field(default_factory=list)
+    functions: List[str] = Field(default_factory=list)
+    triggers: List[str] = Field(default_factory=list)

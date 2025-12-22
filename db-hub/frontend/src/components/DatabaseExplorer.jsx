@@ -4,49 +4,9 @@ import { ChevronRight, ChevronDown, ChevronUp, Table, Eye, Zap, Code, Database, 
 import { getTables, getViews, getProcedures, getFunctions, getTriggers, getDatabases, createDatabase, selectDatabase, exportDatabase, getConnectionStringForDb, deleteDatabase } from '../services/databaseService';
 import { useToast } from '../contexts/ToastContext';
 import './DatabaseExplorer.css';
+import ExportModal from './ExportModal';
 
-const CustomTooltip = ({ children, text }) => {
-  const [show, setShow] = useState(false);
 
-  return (
-    <div
-      className="custom-tooltip-wrapper"
-      onMouseEnter={() => setShow(true)}
-      onMouseLeave={() => setShow(false)}
-      style={{ position: 'relative', display: 'inline-flex' }}
-    >
-      {children}
-      {show && (
-        <div style={{
-          position: 'absolute',
-          bottom: '100%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          marginBottom: '8px',
-          padding: '4px 8px',
-          background: 'var(--surface-hover)',
-          border: '1px solid var(--border)',
-          borderRadius: '4px',
-          fontSize: '12px',
-          whiteSpace: 'nowrap',
-          zIndex: 1000,
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-        }}>
-          {text}
-          <div style={{
-            position: 'absolute',
-            top: '100%',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            borderWidth: '4px',
-            borderStyle: 'solid',
-            borderColor: 'var(--border) transparent transparent transparent'
-          }} />
-        </div>
-      )}
-    </div>
-  );
-};
 
 const DeleteModal = ({ isOpen, onClose, onConfirm, dbName }) => {
   if (!isOpen) return null;
@@ -106,6 +66,7 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
   const [exporting, setExporting] = useState(null);
   const [showConnectionModal, setShowConnectionModal] = useState(false);
   const [deleteModal, setDeleteModal] = useState({ show: false, dbName: null });
+  const [exportModal, setExportModal] = useState({ show: false, dbName: null });
   const toast = useToast();
 
   const loadDatabaseList = async () => {
@@ -121,7 +82,7 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
       const dbList = await getDatabases(selectedDatabase, connStr);
       setDatabases(dbList || []);
     } catch (error) {
-      toast.error(`Failed to load databases: ${error.message}`);
+      toast.error(`Failed to load databases: ${error.message} `);
       setDatabases([]);
     } finally {
       setLoadingDatabases(false);
@@ -165,7 +126,7 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
         triggers: triggers || []
       });
     } catch (error) {
-      toast.error(`Failed to load database objects: ${error.message}`);
+      toast.error(`Failed to load database objects: ${error.message} `);
     } finally {
       setLoading(false);
     }
@@ -201,7 +162,7 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
       }
       toast.success(`Switched to database '${dbName}'`);
     } catch (error) {
-      toast.error(`Failed to select database: ${error.message}`);
+      toast.error(`Failed to select database: ${error.message} `);
     }
   };
 
@@ -219,21 +180,32 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
       setShowCreateModal(false);
       loadDatabaseList();
     } catch (error) {
-      toast.error(`Failed to create database: ${error.message}`);
+      toast.error(`Failed to create database: ${error.message} `);
     } finally {
       setCreating(false);
     }
   };
 
-  const handleExportDatabase = async (e, dbName) => {
+  const handleExportDatabase = (e, dbName) => {
     e.stopPropagation();
+    setExportModal({ show: true, dbName });
+  };
+
+  const handleConfirmExport = async (options) => {
+    const dbName = exportModal.dbName;
+    setExportModal({ show: false, dbName: null });
+
     try {
       setExporting(dbName);
       toast.info(`Exporting ${dbName}...`);
-      await exportDatabase(selectedDatabase, dbName);
+
+      const isCustom = selectedDatabase && selectedDatabase.startsWith('custom');
+      const connStr = isCustom ? customConnection : null;
+
+      await exportDatabase(selectedDatabase, dbName, options, connStr);
       toast.success(`Export started for ${dbName}`);
     } catch (error) {
-      toast.error(`Export failed: ${error.message}`);
+      toast.error(`Export failed: ${error.message} `);
     } finally {
       setExporting(null);
     }
@@ -262,7 +234,7 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
       }
       loadDatabaseList();
     } catch (error) {
-      toast.error(`Failed to delete database: ${error.message}`);
+      toast.error(`Failed to delete database: ${error.message} `);
     } finally {
       setDeleting(null);
     }
@@ -289,60 +261,60 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
     switch (action) {
       case 'select100':
         if (dbType === 'sqlserver') {
-          return `SELECT TOP 100 * FROM ${objectType === 'views' ? '' : ''}${objectName};`;
+          return `SELECT TOP 100 * FROM ${objectType === 'views' ? '' : ''}${objectName}; `;
         } else if (dbType === 'postgres') {
-          return `SELECT * FROM ${objectName} LIMIT 100;`;
+          return `SELECT * FROM ${objectName} LIMIT 100; `;
         } else {
-          return `SELECT * FROM ${objectName} LIMIT 100;`;
+          return `SELECT * FROM ${objectName} LIMIT 100; `;
         }
 
       case 'count':
-        return `SELECT COUNT(*) AS total_rows FROM ${objectName};`;
+        return `SELECT COUNT(*) AS total_rows FROM ${objectName}; `;
 
       case 'describe':
         if (dbType === 'sqlserver') {
-          return `EXEC sp_help '${objectName}';`;
+          return `EXEC sp_help '${objectName}'; `;
         } else if (dbType === 'postgres') {
-          return `\\d+ ${objectName}`;
+          return `\\d + ${objectName} `;
         } else {
-          return `DESCRIBE ${objectName};`;
+          return `DESCRIBE ${objectName}; `;
         }
 
       case 'selectAll':
-        return `SELECT * FROM ${objectName};`;
+        return `SELECT * FROM ${objectName}; `;
 
       case 'showCreate':
         if (objectType === 'views') {
           if (dbType === 'sqlserver') {
-            return `SELECT OBJECT_DEFINITION(OBJECT_ID('${objectName}')) AS ViewDefinition;`;
+            return `SELECT OBJECT_DEFINITION(OBJECT_ID('${objectName}')) AS ViewDefinition; `;
           } else if (dbType === 'postgres') {
-            return `SELECT pg_get_viewdef('${objectName}', true);`;
+            return `SELECT pg_get_viewdef('${objectName}', true); `;
           } else {
-            return `SHOW CREATE VIEW ${objectName};`;
+            return `SHOW CREATE VIEW ${objectName}; `;
           }
         } else if (objectType === 'procedures') {
           if (dbType === 'sqlserver') {
-            return `EXEC sp_helptext '${objectName}';`;
+            return `EXEC sp_helptext '${objectName}'; `;
           } else if (dbType === 'postgres') {
-            return `SELECT pg_get_functiondef((SELECT oid FROM pg_proc WHERE proname = '${objectName}' LIMIT 1));`;
+            return `SELECT pg_get_functiondef((SELECT oid FROM pg_proc WHERE proname = '${objectName}' LIMIT 1)); `;
           } else {
-            return `SHOW CREATE PROCEDURE ${objectName};`;
+            return `SHOW CREATE PROCEDURE ${objectName}; `;
           }
         } else if (objectType === 'functions') {
           if (dbType === 'sqlserver') {
-            return `EXEC sp_helptext '${objectName}';`;
+            return `EXEC sp_helptext '${objectName}'; `;
           } else if (dbType === 'postgres') {
-            return `SELECT pg_get_functiondef((SELECT oid FROM pg_proc WHERE proname = '${objectName}' LIMIT 1));`;
+            return `SELECT pg_get_functiondef((SELECT oid FROM pg_proc WHERE proname = '${objectName}' LIMIT 1)); `;
           } else {
-            return `SHOW CREATE FUNCTION ${objectName};`;
+            return `SHOW CREATE FUNCTION ${objectName}; `;
           }
         } else if (objectType === 'triggers') {
           if (dbType === 'sqlserver') {
-            return `EXEC sp_helptext '${objectName}';`;
+            return `EXEC sp_helptext '${objectName}'; `;
           } else if (dbType === 'postgres') {
-            return `SELECT pg_get_triggerdef((SELECT oid FROM pg_trigger WHERE tgname = '${objectName}' LIMIT 1));`;
+            return `SELECT pg_get_triggerdef((SELECT oid FROM pg_trigger WHERE tgname = '${objectName}' LIMIT 1)); `;
           } else {
-            return `SHOW CREATE TRIGGER ${objectName};`;
+            return `SHOW CREATE TRIGGER ${objectName}; `;
           }
         }
         break;
@@ -350,19 +322,19 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
       case 'execute':
         if (objectType === 'procedures') {
           if (dbType === 'sqlserver') {
-            return `EXEC ${objectName};`;
+            return `EXEC ${objectName}; `;
           } else if (dbType === 'postgres') {
-            return `CALL ${objectName}();`;
+            return `CALL ${objectName} (); `;
           } else {
-            return `CALL ${objectName}();`;
+            return `CALL ${objectName} (); `;
           }
         } else if (objectType === 'functions') {
           if (dbType === 'sqlserver') {
-            return `SELECT dbo.${objectName}();`;
+            return `SELECT dbo.${objectName} (); `;
           } else if (dbType === 'postgres') {
-            return `SELECT ${objectName}();`;
+            return `SELECT ${objectName} (); `;
           } else {
-            return `SELECT ${objectName}();`;
+            return `SELECT ${objectName} (); `;
           }
         }
         break;
@@ -396,41 +368,38 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
   };
 
   return (
-    <div className={`database-explorer ${isCollapsed ? 'collapsed' : ''}`}>
+    <div className={`database-explorer ${isCollapsed ? 'collapsed' : ''} `}>
       <div className="explorer-header">
         <h3>
           <Database size={18} />
           Explorer
         </h3>
         <div className="header-actions">
-          <CustomTooltip text={isCollapsed ? "Expand" : "Collapse"}>
-            <button
-              className="collapse-button"
-              onClick={() => setIsCollapsed(!isCollapsed)}
-            >
-              {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-            </button>
-          </CustomTooltip>
+          <button
+            className="collapse-button"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            data-tooltip={isCollapsed ? "Expand" : "Collapse"}
+          >
+            {isCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+          </button>
 
-          <CustomTooltip text="View Connection String">
-            <button
-              className="refresh-button"
-              onClick={() => setShowConnectionModal(true)}
-              style={{ marginRight: '8px' }}
-            >
-              <Link size={16} />
-            </button>
-          </CustomTooltip>
+          <button
+            className="refresh-button"
+            onClick={() => setShowConnectionModal(true)}
+            style={{ marginRight: '8px' }}
+            data-tooltip="View Connection String"
+          >
+            <Link size={16} />
+          </button>
 
-          <CustomTooltip text="Refresh">
-            <button
-              className="refresh-button"
-              onClick={handleRefresh}
-              disabled={loading || loadingDatabases}
-            >
-              <RefreshCw size={16} className={(loading || loadingDatabases) ? 'spin' : ''} />
-            </button>
-          </CustomTooltip>
+          <button
+            className="refresh-button"
+            onClick={handleRefresh}
+            disabled={loading || loadingDatabases}
+            data-tooltip="Refresh"
+          >
+            <RefreshCw size={16} className={(loading || loadingDatabases) ? 'spin' : ''} />
+          </button>
         </div>
       </div>
 
@@ -452,14 +421,13 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
                 <span className="section-label">Databases</span>
                 <span className="section-count">{databases.length}</span>
               </div>
-              <CustomTooltip text="Create new database">
-                <button
-                  className="section-action-btn"
-                  onClick={() => setShowCreateModal(true)}
-                >
-                  <Plus size={14} />
-                </button>
-              </CustomTooltip>
+              <button
+                className="section-action-btn"
+                onClick={() => setShowCreateModal(true)}
+                data-tooltip="Create new database"
+              >
+                <Plus size={14} />
+              </button>
             </div>
 
             {expanded.databases && (
@@ -477,38 +445,36 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
                         onClick={() => handleSelectDatabase(db)}
                       >
                         <Database size={14} className="db-icon" />
-                        <span className="item-name" title={db}>{db}</span>
+                        <span className="item-name" data-tooltip={db}>{db}</span>
                         {currentDatabase === db && <span className="selected-badge">active</span>}
-                        <CustomTooltip text="Export database">
-                          <button
-                            className="action-btn"
-                            onClick={(e) => handleExportDatabase(e, db)}
-                            disabled={exporting === db}
+                        <button
+                          className="action-btn"
+                          onClick={(e) => handleExportDatabase(e, db)}
+                          disabled={exporting === db}
+                          data-tooltip="Export database"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="14"
+                            height="14"
+                            fill="currentColor"
+                            className={`bi bi-database-fill-down ${exporting === db ? 'spin' : ''}`}
+                            viewBox="0 0 16 16"
                           >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="14"
-                              height="14"
-                              fill="currentColor"
-                              className={`bi bi-database-fill-down ${exporting === db ? 'spin' : ''}`}
-                              viewBox="0 0 16 16"
-                            >
-                              <path d="M12.5 9a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7m.354 5.854 1.5-1.5a.5.5 0 0 0-.708-.708l-.646.647V10.5a.5.5 0 0 0-1 0v2.793l-.646-.647a.5.5 0 0 0-.708.708l1.5 1.5a.5.5 0 0 0 .708 0M8 1c-1.573 0-3.022.289-4.096.777C2.875 2.245 2 2.993 2 4s.875 1.755 1.904 2.223C4.978 6.711 6.427 7 8 7s3.022-.289 4.096-.777C13.125 5.755 14 5.007 14 4s-.875-1.755-1.904-2.223C11.022 1.289 9.573 1 8 1" />
-                              <path d="M2 7v-.839c.457.432 1.004.751 1.49.972C4.722 7.693 6.318 8 8 8s3.278-.307 4.51-.867c.486-.22 1.033-.54 1.49-.972V7c0 .424-.155.802-.411 1.133a4.51 4.51 0 0 0-4.815 1.843A12 12 0 0 1 8 10c-1.573 0-3.022-.289-4.096-.777C2.875 8.755 2 8.007 2 7m6.257 3.998L8 11c-1.682 0-3.278-.307-4.51-.867-.486-.22-1.033-.54-1.49-.972V10c0 1.007.875 1.755 1.904 2.223C4.978 12.711 6.427 13 8 13h.027a4.55 4.55 0 0 1 .23-2.002m-.002 3L8 14c-1.682 0-3.278-.307-4.51-.867-.486-.22-1.033-.54-1.49-.972V13c0 1.007.875 1.755 1.904 2.223C4.978 15.711 6.427 16 8 16c.536 0 1.058-.034 1.555-.097a4.5 4.5 0 0 1-1.3-1.905" />
-                            </svg>
-                          </button>
-                        </CustomTooltip>
+                            <path d="M12.5 9a3.5 3.5 0 1 1 0 7 3.5 3.5 0 0 1 0-7m.354 5.854 1.5-1.5a.5.5 0 0 0-.708-.708l-.646.647V10.5a.5.5 0 0 0-1 0v2.793l-.646-.647a.5.5 0 0 0-.708.708l1.5 1.5a.5.5 0 0 0 .708 0M8 1c-1.573 0-3.022.289-4.096.777C2.875 2.245 2 2.993 2 4s.875 1.755 1.904 2.223C4.978 6.711 6.427 7 8 7s3.022-.289 4.096-.777C13.125 5.755 14 5.007 14 4s-.875-1.755-1.904-2.223C11.022 1.289 9.573 1 8 1" />
+                            <path d="M2 7v-.839c.457.432 1.004.751 1.49.972C4.722 7.693 6.318 8 8 8s3.278-.307 4.51-.867c.486-.22 1.033-.54 1.49-.972V7c0 .424-.155.802-.411 1.133a4.51 4.51 0 0 0-4.815 1.843A12 12 0 0 1 8 10c-1.573 0-3.022-.289-4.096-.777C2.875 8.755 2 8.007 2 7m6.257 3.998L8 11c-1.682 0-3.278-.307-4.51-.867-.486-.22-1.033-.54-1.49-.972V10c0 1.007.875 1.755 1.904 2.223C4.978 12.711 6.427 13 8 13h.027a4.55 4.55 0 0 1 .23-2.002m-.002 3L8 14c-1.682 0-3.278-.307-4.51-.867-.486-.22-1.033-.54-1.49-.972V13c0 1.007.875 1.755 1.904 2.223C4.978 15.711 6.427 16 8 16c.536 0 1.058-.034 1.555-.097a4.5 4.5 0 0 1-1.3-1.905" />
+                          </svg>
+                        </button>
                         {currentDatabase !== db && (
-                          <CustomTooltip text="Delete database">
-                            <button
-                              className="action-btn delete-btn"
-                              onClick={(e) => initiateDelete(e, db)}
-                              disabled={deleting === db}
-                              style={{ marginLeft: '4px', color: 'var(--error)' }}
-                            >
-                              <Trash2 size={14} className={deleting === db ? 'spin' : ''} />
-                            </button>
-                          </CustomTooltip>
+                          <button
+                            className="action-btn delete-btn"
+                            onClick={(e) => initiateDelete(e, db)}
+                            disabled={deleting === db}
+                            style={{ marginLeft: '4px', color: 'var(--error)' }}
+                            data-tooltip="Delete database"
+                          >
+                            <Trash2 size={14} className={deleting === db ? 'spin' : ''} />
+                          </button>
                         )}
                       </li>
                     ))}
@@ -557,72 +523,66 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
                                   className="object-item"
                                   onClick={() => handleObjectClick(section.id, itemName)}
                                 >
-                                  <span className="item-name" title={itemName}>
+                                  <span className="item-name" data-tooltip={itemName}>
                                     {itemName}
                                     {item.table && <span className="item-meta">on {item.table}</span>}
                                   </span>
                                   <div className="item-actions">
                                     {(section.id === 'tables' || section.id === 'views') && (
                                       <>
-                                        <CustomTooltip text="SELECT TOP 100">
-                                          <button
-                                            className="action-btn"
-                                            onClick={(e) => handleQuickAction(e, 'select100', section.id, itemName)}
-                                          >
-                                            <List size={12} />
-                                          </button>
-                                        </CustomTooltip>
+                                        <button
+                                          className="action-btn"
+                                          onClick={(e) => handleQuickAction(e, 'select100', section.id, itemName)}
+                                          data-tooltip="SELECT TOP 100"
+                                        >
+                                          <List size={12} />
+                                        </button>
                                         {section.id === 'tables' && (
                                           <>
-                                            <CustomTooltip text="COUNT rows">
-                                              <button
-                                                className="action-btn"
-                                                onClick={(e) => handleQuickAction(e, 'count', section.id, itemName)}
-                                              >
-                                                <Hash size={12} />
-                                              </button>
-                                            </CustomTooltip>
-                                            <CustomTooltip text="DESCRIBE table">
-                                              <button
-                                                className="action-btn"
-                                                onClick={(e) => handleQuickAction(e, 'describe', section.id, itemName)}
-                                              >
-                                                <Info size={12} />
-                                              </button>
-                                            </CustomTooltip>
+                                            <button
+                                              className="action-btn"
+                                              onClick={(e) => handleQuickAction(e, 'count', section.id, itemName)}
+                                              data-tooltip="COUNT rows"
+                                            >
+                                              <Hash size={12} />
+                                            </button>
+                                            <button
+                                              className="action-btn"
+                                              onClick={(e) => handleQuickAction(e, 'describe', section.id, itemName)}
+                                              data-tooltip="DESCRIBE table"
+                                            >
+                                              <Info size={12} />
+                                            </button>
                                           </>
                                         )}
                                       </>
                                     )}
                                     {(section.id === 'procedures' || section.id === 'functions') && (
                                       <>
-                                        <CustomTooltip text="Show definition">
-                                          <button
-                                            className="action-btn"
-                                            onClick={(e) => handleQuickAction(e, 'showCreate', section.id, itemName)}
-                                          >
-                                            <Info size={12} />
-                                          </button>
-                                        </CustomTooltip>
-                                        <CustomTooltip text="Execute template">
-                                          <button
-                                            className="action-btn"
-                                            onClick={(e) => handleQuickAction(e, 'execute', section.id, itemName)}
-                                          >
-                                            <Play size={12} />
-                                          </button>
-                                        </CustomTooltip>
-                                      </>
-                                    )}
-                                    {section.id === 'triggers' && (
-                                      <CustomTooltip text="Show definition">
                                         <button
                                           className="action-btn"
                                           onClick={(e) => handleQuickAction(e, 'showCreate', section.id, itemName)}
+                                          data-tooltip="Show definition"
                                         >
                                           <Info size={12} />
                                         </button>
-                                      </CustomTooltip>
+                                        <button
+                                          className="action-btn"
+                                          onClick={(e) => handleQuickAction(e, 'execute', section.id, itemName)}
+                                          data-tooltip="Execute template"
+                                        >
+                                          <Play size={12} />
+                                        </button>
+                                      </>
+                                    )}
+                                    {section.id === 'triggers' && (
+                                      <button
+                                        className="action-btn"
+                                        onClick={(e) => handleQuickAction(e, 'showCreate', section.id, itemName)}
+                                        data-tooltip="Show definition"
+                                      >
+                                        <Info size={12} />
+                                      </button>
                                     )}
                                   </div>
                                 </li>
@@ -752,8 +712,18 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
         onConfirm={confirmDelete}
         dbName={deleteModal.dbName}
       />
+
+      <ExportModal
+        isOpen={exportModal.show}
+        onClose={() => setExportModal({ show: false, dbName: null })}
+        onExport={handleConfirmExport}
+        databaseName={exportModal.dbName}
+        databaseType={selectedDatabase}
+        customConnection={customConnection}
+      />
     </div>
   );
 };
 
 export default DatabaseExplorer;
+

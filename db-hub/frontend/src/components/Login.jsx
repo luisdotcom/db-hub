@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import logo from '../assets/logo.png';
@@ -8,8 +9,17 @@ const Login = () => {
     const { login } = useAuth();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(false);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        const savedUsername = localStorage.getItem('db_hub_remember_username');
+        if (savedUsername) {
+            setUsername(savedUsername);
+            setRememberMe(true);
+        }
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -18,6 +28,11 @@ const Login = () => {
 
         try {
             await login(username, password);
+            if (rememberMe) {
+                localStorage.setItem('db_hub_remember_username', username);
+            } else {
+                localStorage.removeItem('db_hub_remember_username');
+            }
         } catch (err) {
             setError(err.message || 'Login failed. Please check your credentials.');
         } finally {
@@ -68,6 +83,19 @@ const Login = () => {
                         />
                     </div>
 
+                    <div className="form-group checkbox-group">
+                        <span className="switch-label">Remember me</span>
+                        <label className="switch">
+                            <input
+                                type="checkbox"
+                                checked={rememberMe}
+                                onChange={(e) => setRememberMe(e.target.checked)}
+                                disabled={isLoading}
+                            />
+                            <span className="slider round"></span>
+                        </label>
+                    </div>
+
                     <button
                         type="submit"
                         className="login-button"
@@ -80,7 +108,7 @@ const Login = () => {
 
                 <div className="login-footer">
                     <p>
-                        Powered by{' '}
+                        by{' '}
                         <a
                             href="https://luisdotcom.dev/"
                             target="_blank"

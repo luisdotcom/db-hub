@@ -22,3 +22,61 @@
   height: 100vh;
   overflow: hidden;
 }
+
+
+.portal-tooltip {
+  position: relative;
+  background-color: #000;
+  color: #fff;
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 4px;
+  white-space: nowrap;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  opacity: 0;
+  animation: tooltipFadeIn 0.2s ease forwards;
+}
+
+@keyframes tooltipFadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.tooltip-arrow {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+}
+
+.tooltip-arrow.arrow-bottom {
+  border-width: 5px 5px 0 5px;
+  border-color: #000 transparent transparent transparent;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.tooltip-arrow.arrow-top {
+  border-width: 0 5px 5px 5px;
+  border-color: transparent transparent #000 transparent;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.tooltip-arrow.arrow-right {
+  border-width: 5px 0 5px 5px;
+  border-color: transparent transparent transparent #000;
+  right: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.tooltip-arrow.arrow-left {
+  border-width: 5px 5px 5px 0;
+  border-color: transparent #000 transparent transparent;
+  left: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+}

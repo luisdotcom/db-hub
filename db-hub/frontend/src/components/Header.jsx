@@ -226,7 +226,8 @@ const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
             target="_blank"
             rel="noopener noreferrer"
             className="github-link"
-            title="View on GitHub"
+            data-tooltip="View on GitHub"
+            data-tooltip-pos="left"
           >
             <Github size={20} />
           </a>
@@ -290,7 +291,7 @@ const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
                             <button
                               className="delete-btn"
                               onClick={(e) => handleDeleteConnection(e, conn.id)}
-                              title="Delete connection"
+                              data-tooltip="Delete connection"
                             >
                               <Trash2 size={14} />
                             </button>
@@ -316,7 +317,8 @@ const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
             className="theme-toggle"
             onClick={handleLogout}
             aria-label="Logout"
-            title="Logout"
+            data-tooltip="Logout"
+            data-tooltip-pos="left"
           >
             <LogOut size={20} />
           </button>
@@ -452,7 +454,7 @@ const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
                     className={`test-conn-btn ${testStatus}`}
                     onClick={handleTestConnection}
                     disabled={!newConnectionString.trim() || testStatus === 'testing'}
-                    title="Test Connection"
+                    data-tooltip="Test Connection"
                   >
                     {testStatus === 'testing' ? (
                       <Loader2 size={16} className="spin" />

@@ -148,6 +148,11 @@ class DatabaseService:
                 logger.info(f"Created database {database_name} on {db_type.value}")
                 return True
         except Exception as e:
+            error_msg = str(e).lower()
+            if "1044" in error_msg or "1142" in error_msg or "access denied" in error_msg or "insufficient_privilege" in error_msg or "permission denied" in error_msg or "42501" in error_msg:
+                 logger.error(f"Permission denied creating database {database_name}: {e}")
+                 raise QueryExecutionError(f"Permission denied: You do not have sufficient privileges to create database '{database_name}'. Please check your user permissions.")
+            
             logger.error(f"Failed to create database {database_name} for {db_type.value}: {str(e)}")
             raise
 
@@ -199,6 +204,11 @@ class DatabaseService:
                 logger.info(f"Deleted database {database_name} on {db_type.value}")
                 return True
         except Exception as e:
+            error_msg = str(e).lower()
+            if "1044" in error_msg or "1142" in error_msg or "access denied" in error_msg or "insufficient_privilege" in error_msg or "permission denied" in error_msg or "42501" in error_msg:
+                 logger.error(f"Permission denied deleting database {database_name}: {e}")
+                 raise QueryExecutionError(f"Permission denied: You do not have sufficient privileges to delete database '{database_name}'. Please check your user permissions.")
+
             logger.error(f"Failed to delete database {database_name} for {db_type.value}: {str(e)}")
             raise
 

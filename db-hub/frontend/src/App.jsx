@@ -8,6 +8,7 @@ import Login from './components/Login';
 import { executeQuery, getConnectionStringForDb } from './services/databaseService';
 import { useToast } from './contexts/ToastContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import TooltipController from './components/TooltipController';
 import './App.css';
 
 function AppContent() {
@@ -19,6 +20,8 @@ function AppContent() {
   const [queryError, setQueryError] = useState(null);
   const [isExecuting, setIsExecuting] = useState(false);
   const [externalQuery, setExternalQuery] = useState('');
+  const [editorCollapsed, setEditorCollapsed] = useState(false);
+  const [resultsCollapsed, setResultsCollapsed] = useState(false);
   const toast = useToast();
 
 
@@ -73,6 +76,9 @@ function AppContent() {
       setQueryResult(result);
 
       if (result.success) {
+        if (result.rows && result.rows.length > 0) {
+          setResultsCollapsed(false);
+        }
         if (result.rows_affected !== null && result.rows_affected !== undefined) {
           toast.success(`Query executed: ${result.rows_affected} row(s) affected`);
         } else {
@@ -113,6 +119,27 @@ function AppContent() {
     return <Login />;
   }
 
+
+
+  const toggleEditor = () => {
+    setEditorCollapsed(!editorCollapsed);
+    if (!editorCollapsed && resultsCollapsed) {
+    }
+  };
+
+  const toggleResults = () => {
+    setResultsCollapsed(!resultsCollapsed);
+  };
+
+  let layoutClass = 'layout-split';
+  if (editorCollapsed && !resultsCollapsed) {
+    layoutClass = 'layout-results-full';
+  } else if (!editorCollapsed && resultsCollapsed) {
+    layoutClass = 'layout-editor-full';
+  } else if (editorCollapsed && resultsCollapsed) {
+    layoutClass = 'layout-collapsed-both';
+  }
+
   return (
     <div className="app">
       <Header
@@ -132,18 +159,26 @@ function AppContent() {
               onDatabaseSelected={handleDatabaseSelected}
             />
           </aside>
-          <div className="main-panel">
+          <div className={`main-panel ${layoutClass}`}>
             <QueryEditor
               onExecute={handleExecuteQuery}
               isExecuting={isExecuting}
               selectedDatabase={selectedDatabase}
               externalQuery={externalQuery}
               onQueryChange={setExternalQuery}
+              isCollapsed={editorCollapsed}
+              onToggleCollapse={toggleEditor}
             />
-            <QueryResults result={queryResult} error={queryError} />
+            <QueryResults
+              result={queryResult}
+              error={queryError}
+              isCollapsed={resultsCollapsed}
+              onToggleCollapse={toggleResults}
+            />
           </div>
         </div>
       </main>
+      <TooltipController />
     </div>
   );
 }

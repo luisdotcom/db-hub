@@ -110,7 +110,7 @@ const DatabaseSelector = ({ selectedDatabase, onDatabaseChange, customConnection
                   }
                 }}
               >
-                <span className="db-icon-inline" title={db.name}>{db.icon}</span>
+                <span className="db-icon-inline" data-tooltip={db.name}>{db.icon}</span>
                 <span className="db-name-inline">{db.name}</span>
               </button>
             ))}
@@ -122,7 +122,7 @@ const DatabaseSelector = ({ selectedDatabase, onDatabaseChange, customConnection
               className="selector-collapse-button"
               onClick={() => setIsCollapsed(!isCollapsed)}
             >
-              {isCollapsed ? <ChevronDown size={16} title="Expand" /> : <ChevronUp size={16} title="Collapse" />}
+              {isCollapsed ? <ChevronDown size={16} data-tooltip="Expand" /> : <ChevronUp size={16} data-tooltip="Collapse" />}
             </button>
           )}
           {selectedDbInfo && (

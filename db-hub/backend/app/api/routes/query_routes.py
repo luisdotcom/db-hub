@@ -5,7 +5,7 @@ from typing import List
 import logging
 import os
 
-from app.models import QueryRequest, QueryResponse, DatabaseType
+from app.models import QueryRequest, QueryResponse, DatabaseType, ExportOptions
 from app.services import database_service, export_service
 from app.core.exceptions import QueryExecutionError, DatabaseConnectionError
 
@@ -201,10 +201,10 @@ async def test_connection(database_type: DatabaseType):
         }
 
 
-@router.get("/export/{database_type}/{database_name}")
-async def export_database_endpoint(database_type: DatabaseType, database_name: str):
+@router.post("/export/{database_type}/{database_name}")
+async def export_database_endpoint(database_type: str, database_name: str, options: ExportOptions, connection_string: str = None):
     try:
-        file_path = await export_service.export_database(database_type.value, database_name)
+        file_path = await export_service.export_database(database_type, database_name, connection_string, options)
         
         return FileResponse(
             path=file_path,
