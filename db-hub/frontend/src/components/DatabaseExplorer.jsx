@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { ChevronRight, ChevronDown, ChevronUp, Table, Eye, Zap, Code, Database, RefreshCw, List, Hash, Info, Play, Plus, FolderOpen, X, Link, Trash2 } from 'lucide-react';
-import { getTables, getViews, getProcedures, getFunctions, getTriggers, getDatabases, createDatabase, selectDatabase, exportDatabase, getConnectionStringForDb, deleteDatabase, getPrimaryKeys } from '../services/databaseService';
+import { ChevronRight, ChevronDown, ChevronUp, Table, Eye, Zap, Code, Database, RefreshCw, List, Hash, Info, Play, Plus, FolderOpen, X, Link, Trash2, Key, GitMerge, FileText } from 'lucide-react';
+import { getTables, getViews, getProcedures, getFunctions, getTriggers, getDatabases, createDatabase, selectDatabase, exportDatabase, getConnectionStringForDb, deleteDatabase, getPrimaryKeys, getForeignKeys, getIndexes, getTableSchema } from '../services/databaseService';
 import { useToast } from '../contexts/ToastContext';
 import './DatabaseExplorer.css';
 import ConfirmationModal from './ConfirmationModal';
@@ -19,6 +19,8 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
     functions: [],
     triggers: []
   });
+  const [tableDetails, setTableDetails] = useState({});
+  const [expandedTables, setExpandedTables] = useState({});
   const [expanded, setExpanded] = useState({
     databases: true,
     tables: true,
@@ -216,6 +218,52 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
       ...prev,
       [section]: !prev[section]
     }));
+  };
+
+  const toggleTableExpansion = async (tableName) => {
+    setExpandedTables(prev => ({
+      ...prev,
+      [tableName]: !prev[tableName]
+    }));
+
+    if (!tableDetails[tableName] && !expandedTables[tableName]) {
+      try {
+        const isCustom = selectedDatabase && selectedDatabase.startsWith('custom');
+        const dbType = isCustom ? 'custom' : selectedDatabase;
+        let connStr = isCustom ? customConnection : null;
+        if (isCustom && currentDatabase) {
+          connStr = getConnectionStringForDb(customConnection, currentDatabase);
+        }
+
+        const [columnsData, fksData, indexesData, pksData] = await Promise.all([
+          getTableSchema(dbType, tableName, connStr),
+          getForeignKeys(dbType, tableName, connStr),
+          getIndexes(dbType, tableName, connStr),
+          getPrimaryKeys(dbType, tableName, connStr)
+        ]);
+
+        const fks = fksData || [];
+        const indexes = indexesData || [];
+        const columns = columnsData.columns || [];
+        const pks = pksData || [];
+
+        setTableDetails(prev => ({
+          ...prev,
+          [tableName]: {
+            columns: columns.map(col => ({
+              ...col,
+              isPk: pks.includes(col.name),
+              isFk: fks.some(fk => fk.constrained_columns.includes(col.name))
+            })),
+            foreignKeys: fks,
+            indexes: indexes
+          }
+        }));
+      } catch (error) {
+        console.error("Failed to load table details", error);
+        toast.error(`Failed to load details for ${tableName}`);
+      }
+    }
   };
 
   const handleObjectClick = (type, name) => {
@@ -507,48 +555,79 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
                           <ul className="object-list">
                             {items.map((item, index) => {
                               const itemName = typeof item === 'string' ? item : item.name;
+                              const isTableExpanded = section.id === 'tables' && expandedTables[itemName];
+                              const details = tableDetails[itemName];
+
                               return (
                                 <li
                                   key={index}
-                                  className="object-item"
-                                  onClick={() => handleObjectClick(section.id, itemName)}
+                                  className={`object-item ${isTableExpanded ? 'expanded-item' : ''}`}
                                 >
-                                  <span className="item-name" data-tooltip={itemName}>
-                                    {itemName}
-                                    {item.table && <span className="item-meta">on {item.table}</span>}
-                                  </span>
-                                  <div className="item-actions">
-                                    {(section.id === 'tables' || section.id === 'views') && (
-                                      <>
-                                        <button
-                                          className="action-btn"
-                                          onClick={(e) => handleQuickAction(e, 'select100', section.id, itemName)}
-                                          data-tooltip="SELECT TOP 100"
-                                        >
-                                          <List size={12} />
-                                        </button>
-                                        {section.id === 'tables' && (
-                                          <>
-                                            <button
-                                              className="action-btn"
-                                              onClick={(e) => handleQuickAction(e, 'count', section.id, itemName)}
-                                              data-tooltip="COUNT rows"
-                                            >
-                                              <Hash size={12} />
-                                            </button>
-                                            <button
-                                              className="action-btn"
-                                              onClick={(e) => handleQuickAction(e, 'describe', section.id, itemName)}
-                                              data-tooltip="DESCRIBE table"
-                                            >
-                                              <Info size={12} />
-                                            </button>
-                                          </>
-                                        )}
-                                      </>
+                                  <div className="object-item-header" onClick={() => {
+                                    if (section.id === 'tables') {
+                                      toggleTableExpansion(itemName);
+                                    } else {
+                                      handleObjectClick(section.id, itemName);
+                                    }
+                                  }}>
+                                    {section.id === 'tables' && (
+                                      <span className="expand-icon">
+                                        {isTableExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                                      </span>
                                     )}
-                                    {(section.id === 'procedures' || section.id === 'functions') && (
-                                      <>
+                                    <span className="item-name" data-tooltip={itemName}>
+                                      {itemName}
+                                      {item.table && <span className="item-meta">on {item.table}</span>}
+                                    </span>
+                                    <div className="item-actions">
+                                      {(section.id === 'tables' || section.id === 'views') && (
+                                        <>
+                                          <button
+                                            className="action-btn"
+                                            onClick={(e) => handleQuickAction(e, 'select100', section.id, itemName)}
+                                            data-tooltip="SELECT TOP 100"
+                                          >
+                                            <List size={12} />
+                                          </button>
+                                          {section.id === 'tables' && (
+                                            <>
+                                              <button
+                                                className="action-btn"
+                                                onClick={(e) => handleQuickAction(e, 'count', section.id, itemName)}
+                                                data-tooltip="COUNT rows"
+                                              >
+                                                <Hash size={12} />
+                                              </button>
+                                              <button
+                                                className="action-btn"
+                                                onClick={(e) => handleQuickAction(e, 'describe', section.id, itemName)}
+                                                data-tooltip="DESCRIBE table"
+                                              >
+                                                <Info size={12} />
+                                              </button>
+                                            </>
+                                          )}
+                                        </>
+                                      )}
+                                      {(section.id === 'procedures' || section.id === 'functions') && (
+                                        <>
+                                          <button
+                                            className="action-btn"
+                                            onClick={(e) => handleQuickAction(e, 'showCreate', section.id, itemName)}
+                                            data-tooltip="Show definition"
+                                          >
+                                            <Info size={12} />
+                                          </button>
+                                          <button
+                                            className="action-btn"
+                                            onClick={(e) => handleQuickAction(e, 'execute', section.id, itemName)}
+                                            data-tooltip="Execute template"
+                                          >
+                                            <Play size={12} />
+                                          </button>
+                                        </>
+                                      )}
+                                      {section.id === 'triggers' && (
                                         <button
                                           className="action-btn"
                                           onClick={(e) => handleQuickAction(e, 'showCreate', section.id, itemName)}
@@ -556,25 +635,83 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
                                         >
                                           <Info size={12} />
                                         </button>
-                                        <button
-                                          className="action-btn"
-                                          onClick={(e) => handleQuickAction(e, 'execute', section.id, itemName)}
-                                          data-tooltip="Execute template"
-                                        >
-                                          <Play size={12} />
-                                        </button>
-                                      </>
-                                    )}
-                                    {section.id === 'triggers' && (
-                                      <button
-                                        className="action-btn"
-                                        onClick={(e) => handleQuickAction(e, 'showCreate', section.id, itemName)}
-                                        data-tooltip="Show definition"
-                                      >
-                                        <Info size={12} />
-                                      </button>
-                                    )}
+                                      )}
+                                    </div>
                                   </div>
+
+                                  {isTableExpanded && details && (
+                                    <div className="table-details">
+                                      <div className="details-section">
+                                        <div className="details-header">
+                                          <FileText size={10} /> Columns
+                                        </div>
+                                        <ul className="details-list">
+                                          {details.columns.map((col, idx) => {
+                                            const truncateText = (text, maxLength = 10) => {
+                                              if (!text) return '';
+                                              if (text.length <= maxLength) return text;
+                                              return text.substring(0, maxLength - 3) + '...';
+                                            };
+
+                                            const displayType = col.type;
+
+                                            return (
+                                              <li key={idx} className="detail-item">
+                                                <span className="col-name">
+                                                  <span className="truncate" data-tooltip={col.name}>
+                                                    {truncateText(col.name, 10)}
+                                                  </span>
+                                                  {col.isPk && <Key size={10} className="pk-icon" title="Primary Key" />}
+                                                  {col.isFk && <Link size={10} className="fk-icon" title="Foreign Key" />}
+                                                </span>
+                                                <span className="col-type" data-tooltip={col.type}>
+                                                  {truncateText(displayType, 10)}
+                                                </span>
+                                              </li>
+                                            );
+                                          })}
+                                        </ul>
+                                      </div>
+
+                                      {details.foreignKeys && details.foreignKeys.length > 0 && (
+                                        <div className="details-section">
+                                          <div className="details-header">
+                                            <GitMerge size={10} /> Foreign Keys
+                                          </div>
+                                          <ul className="details-list">
+                                            {details.foreignKeys.map((fk, idx) => (
+                                              <li key={idx} className="detail-item">
+                                                <span className="fk-name truncate" data-tooltip={fk.name || `FK_${idx}`}>
+                                                  {fk.name || `FK_${idx}`}
+                                                </span>
+                                                <span className="fk-ref truncate" data-tooltip={fk.referred_table}>
+                                                  → {fk.referred_table}
+                                                </span>
+                                              </li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      )}
+
+                                      {details.indexes && details.indexes.length > 0 && (
+                                        <div className="details-section">
+                                          <div className="details-header">
+                                            <List size={10} /> Indexes
+                                          </div>
+                                          <ul className="details-list">
+                                            {details.indexes.map((idx, i) => (
+                                              <li key={i} className="detail-item">
+                                                <span className="idx-name truncate" data-tooltip={idx.name}>
+                                                  {idx.name}
+                                                </span>
+                                                {idx.unique && <span className="idx-unique">UNIQUE</span>}
+                                              </li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                 </li>
                               );
                             })}

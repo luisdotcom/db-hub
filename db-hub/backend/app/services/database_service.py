@@ -35,7 +35,14 @@ class DatabaseService:
         else:
             raise InvalidDatabaseTypeError(f"Unsupported database type: {db_type}")
     
-    def _get_engine(self, db_type: DatabaseType) -> Engine:
+    def _get_engine(self, db_type: DatabaseType, connection_string: Optional[str] = None) -> Engine:
+        if connection_string:
+            return create_engine(
+                connection_string,
+                pool_pre_ping=True,
+                pool_recycle=3600
+            )
+
         if self._engines[db_type] is None:
             try:
                 connection_string = self._get_connection_string(db_type)
@@ -265,9 +272,9 @@ class DatabaseService:
             logger.error(f"Failed to get tables for {db_type.value}: {str(e)}")
             return []
     
-    def get_table_schema(self, db_type: DatabaseType, table_name: str) -> List[Dict[str, Any]]:
+    def get_table_schema(self, db_type: DatabaseType, table_name: str, connection_string: Optional[str] = None) -> List[Dict[str, Any]]:
         try:
-            engine = self._get_engine(db_type)
+            engine = self._get_engine(db_type, connection_string)
             inspector = inspect(engine)
             columns = inspector.get_columns(table_name)
             
@@ -300,6 +307,40 @@ class DatabaseService:
             return pk_constraint.get("constrained_columns", [])
         except Exception as e:
             logger.error(f"Failed to get primary keys for table {table_name}: {str(e)}")
+            return []
+
+    def get_foreign_keys(self, db_type: DatabaseType, table_name: str, connection_string: Optional[str] = None) -> List[Dict[str, Any]]:
+        try:
+            if db_type == DatabaseType.CUSTOM and connection_string:
+                engine = create_engine(
+                    connection_string,
+                    pool_pre_ping=True,
+                    pool_recycle=3600
+                )
+            else:
+                engine = self._get_engine(db_type)
+
+            inspector = inspect(engine)
+            return inspector.get_foreign_keys(table_name)
+        except Exception as e:
+            logger.error(f"Failed to get foreign keys for table {table_name}: {str(e)}")
+            return []
+
+    def get_indexes(self, db_type: DatabaseType, table_name: str, connection_string: Optional[str] = None) -> List[Dict[str, Any]]:
+        try:
+            if db_type == DatabaseType.CUSTOM and connection_string:
+                engine = create_engine(
+                    connection_string,
+                    pool_pre_ping=True,
+                    pool_recycle=3600
+                )
+            else:
+                engine = self._get_engine(db_type)
+
+            inspector = inspect(engine)
+            return inspector.get_indexes(table_name)
+        except Exception as e:
+            logger.error(f"Failed to get indexes for table {table_name}: {str(e)}")
             return []
 
     def update_table_row(

@@ -121,9 +121,9 @@ async def get_tables(database_type: DatabaseType) -> List[str]:
 
 
 @router.get("/schema/{database_type}/{table_name}")
-async def get_table_schema(database_type: DatabaseType, table_name: str):
+async def get_table_schema(database_type: DatabaseType, table_name: str, connection_string: str = None):
     try:
-        schema = database_service.get_table_schema(database_type, table_name)
+        schema = database_service.get_table_schema(database_type, table_name, connection_string)
         return {"table": table_name, "columns": schema}
     except Exception as e:
         logger.error(f"Error getting table schema: {str(e)}")
@@ -143,6 +143,32 @@ async def get_primary_keys(database_type: DatabaseType, table_name: str, connect
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve primary keys: {str(e)}"
+        )
+
+
+@router.get("/schema/foreign-keys/{database_type}/{table_name}")
+async def get_foreign_keys(database_type: DatabaseType, table_name: str, connection_string: str = None):
+    try:
+        fks = database_service.get_foreign_keys(database_type, table_name, connection_string)
+        return fks
+    except Exception as e:
+        logger.error(f"Error getting foreign keys: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve foreign keys: {str(e)}"
+        )
+
+
+@router.get("/schema/indexes/{database_type}/{table_name}")
+async def get_indexes(database_type: DatabaseType, table_name: str, connection_string: str = None):
+    try:
+        indexes = database_service.get_indexes(database_type, table_name, connection_string)
+        return indexes
+    except Exception as e:
+        logger.error(f"Error getting indexes: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve indexes: {str(e)}"
         )
 
 

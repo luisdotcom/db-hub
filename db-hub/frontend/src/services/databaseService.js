@@ -110,8 +110,12 @@ export const getTables = async (databaseType, connectionString = null) => {
 };
 
 
-export const getTableSchema = async (databaseType, tableName) => {
-  const response = await apiClient.get(`/api/query/schema/${databaseType}/${tableName}`);
+export const getTableSchema = async (databaseType, tableName, connectionString = null) => {
+  let url = `/api/query/schema/${databaseType}/${tableName}`;
+  if (connectionString) {
+    url += `?connection_string=${encodeURIComponent(connectionString)}`;
+  }
+  const response = await apiClient.get(url);
   return response.data;
 };
 
@@ -237,5 +241,23 @@ export const deleteTableRow = async (databaseType, tableName, pkData, connection
     pk_data: pkData,
     connection_string: connectionString
   });
+  return response.data;
+};
+
+export const getForeignKeys = async (databaseType, tableName, connectionString = null) => {
+  let url = `/api/query/schema/foreign-keys/${databaseType}/${tableName}`;
+  if (connectionString) {
+    url += `?connection_string=${encodeURIComponent(connectionString)}`;
+  }
+  const response = await apiClient.get(url);
+  return response.data;
+};
+
+export const getIndexes = async (databaseType, tableName, connectionString = null) => {
+  let url = `/api/query/schema/indexes/${databaseType}/${tableName}`;
+  if (connectionString) {
+    url += `?connection_string=${encodeURIComponent(connectionString)}`;
+  }
+  const response = await apiClient.get(url);
   return response.data;
 };
