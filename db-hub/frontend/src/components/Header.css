@@ -161,6 +161,19 @@
   min-width: 80px;
 }
 
+.db-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+}
+
+.db-version {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: normal;
+}
+
 .dropdown-arrow {
   transition: transform var(--transition-normal);
   color: var(--text-muted);
@@ -260,7 +273,7 @@
   gap: 6px;
 }
 
-.db-dropdown-item .delete-btn {
+.db-dropdown-item .delete-btn, .db-dropdown-item .edit-btn {
   background: transparent;
   border: none;
   padding: 4px;
@@ -274,13 +287,18 @@
   opacity: 0;
 }
 
-.db-dropdown-item:hover .delete-btn {
-  opacity: 1;
-}
-
 .db-dropdown-item .delete-btn:hover {
   background: rgba(239, 68, 68, 0.2);
   color: #ef4444;
+}
+
+.db-dropdown-item .edit-btn:hover {
+  background: var(--surface-hover);
+  color: var(--primary);
+}
+
+.db-dropdown-item:hover .delete-btn, .db-dropdown-item:hover .edit-btn {
+  opacity: 1;
 }
 
 .db-dropdown-item.selected .delete-btn {

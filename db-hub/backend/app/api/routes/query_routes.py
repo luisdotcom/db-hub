@@ -248,6 +248,15 @@ async def get_functions(database_type: DatabaseType):
         )
 
 
+@router.get("/version/{database_type}")
+async def get_version(database_type: DatabaseType, connection_string: str = None):
+    try:
+        version = database_service.get_database_version(database_type, connection_string)
+        return {"version": version}
+    except Exception as e:
+        logger.error(f"Error getting database version: {str(e)}")
+        return {"version": "Unknown"}
+
 @router.get("/triggers/{database_type}")
 async def get_triggers(database_type: DatabaseType):
     try:

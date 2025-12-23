@@ -1,13 +1,13 @@
 
 import { useState, useRef, useEffect } from 'react';
-import { Sun, Moon, Database, ChevronDown, Check, Container, Plus, Trash2, X, Github, Play, AlertCircle, Loader2, LogOut } from 'lucide-react';
+import { Sun, Moon, Database, ChevronDown, Check, Container, Plus, Trash2, X, Github, Play, AlertCircle, Loader2, LogOut, Edit2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import logo from '../assets/logo.png';
-import { executeQuery } from '../services/databaseService';
+import { executeQuery, getDatabaseVersion } from '../services/databaseService';
+import { getConnections, createConnection, updateConnection, deleteConnection } from '../services/connectionService';
 import './Header.css';
-
-const STORAGE_KEY = 'DBHub_custom_connections';
+import ConfirmationModal from './ConfirmationModal';
 
 const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
   const { theme, toggleTheme } = useTheme();
@@ -41,30 +41,70 @@ const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
   ];
 
 
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        setCustomConnections(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to parse saved connections:', e);
-      }
+  const [selectedConnectionId, setSelectedConnectionId] = useState(null);
+  const [dbVersion, setDbVersion] = useState(null);
+  const [deleteModal, setDeleteModal] = useState({ show: false, connectionId: null });
+
+  const loadConnections = async () => {
+    try {
+      const connections = await getConnections();
+      setCustomConnections(connections);
+    } catch (error) {
+      console.error('Failed to load connections:', error);
     }
+  };
+
+  const [containerVersions, setContainerVersions] = useState({});
+
+  useEffect(() => {
+    loadConnections();
+
+    const fetchContainerVersions = async () => {
+      const versions = {};
+      const types = ['mysql', 'postgres', 'sqlserver'];
+
+      for (const type of types) {
+        try {
+          const v = await getDatabaseVersion(type);
+          versions[type] = v.version;
+        } catch {
+          versions[type] = null;
+        }
+      }
+      setContainerVersions(versions);
+    };
+
+    fetchContainerVersions();
   }, []);
 
+  useEffect(() => {
+    let currentV = null;
+    const isCustom = ['mysql', 'postgres', 'sqlserver'].indexOf(selectedDatabase) === -1;
 
-  const saveConnections = (connections) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(connections));
-    setCustomConnections(connections);
-  };
+    if (!isCustom) {
+      currentV = containerVersions[selectedDatabase];
+    } else {
+      const conn = customConnections.find(c => c.id === parseInt(selectedDatabase) || c.id === selectedDatabase);
+      if (conn) {
+        currentV = conn.version;
+      }
+    }
+    setDbVersion(currentV);
+  }, [selectedDatabase, customConnections, containerVersions]);
 
 
   const getSelectedDbInfo = () => {
     const containerDb = containerDatabases.find(db => db.id === selectedDatabase);
     if (containerDb) return containerDb;
 
-    const customDb = customConnections.find(c => c.id === selectedDatabase);
-    if (customDb) return { id: customDb.id, name: customDb.name, icon: '🔗' };
+    const customDb = customConnections.find(c => c.id === parseInt(selectedDatabase) || c.id === selectedDatabase);
+    if (customDb) {
+      let icon = '🔗';
+      if (customDb.type === 'mysql') icon = '🐬';
+      if (customDb.type === 'postgres') icon = '🐘';
+      if (customDb.type === 'sqlserver') icon = '🗄️';
+      return { id: customDb.id, name: customDb.name, icon: icon };
+    }
 
     return containerDatabases[0];
   };
@@ -89,9 +129,9 @@ const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
   };
 
   const handleSelectCustomConnection = (connection) => {
-    onDatabaseChange(connection.id, connection.connectionString);
+    onDatabaseChange(connection.id, connection.connection_string);
     if (onCustomConnection) {
-      onCustomConnection(connection.connectionString);
+      onCustomConnection(connection.connection_string);
     }
     setIsDropdownOpen(false);
   };
@@ -110,6 +150,69 @@ const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
       database: ''
     });
 
+    setSelectedConnectionId(null);
+    setNewConnectionName('');
+    setInputMode('form');
+    setConnDetails({
+      type: 'mysql',
+      host: 'localhost',
+      port: '3306',
+      username: 'root',
+      password: '',
+      database: ''
+    });
+
+    setTestStatus('idle');
+    setTestMessage('');
+  };
+
+  const parseConnectionString = (str) => {
+    try {
+      const pattern = /^(?:([^:+]+)(?:\+([^:]+))?:\/\/)?([^:]+):([^@]+)@([^:/]+)(?::(\d+))?\/([^?]+)(?:\?.*)?$/;
+      const match = str.match(pattern);
+
+      if (match) {
+        const [, type, driver, user, pass, host, port, db] = match;
+        return {
+          type: type || 'mysql',
+          host: host || 'localhost',
+          port: port || '3306',
+          username: decodeURIComponent(user || ''),
+          password: decodeURIComponent(pass || ''),
+          database: db || ''
+        };
+      }
+      return null;
+    } catch (e) {
+      console.warn("Could not parse connection string", e);
+      return null;
+    }
+  };
+
+  const handleEditConnection = (e, connection) => {
+    e.stopPropagation();
+    setSelectedConnectionId(connection.id);
+    setNewConnectionName(connection.name);
+    const connStr = connection.connection_string;
+    setNewConnectionString(connStr);
+
+    const parsed = parseConnectionString(connStr);
+    if (parsed) {
+      setConnDetails(parsed);
+      setInputMode('form');
+    } else {
+      setInputMode('string');
+      setConnDetails({
+        type: 'mysql',
+        host: 'localhost',
+        port: '3306',
+        username: 'root',
+        password: '',
+        database: ''
+      });
+    }
+
+    setShowCustomModal(true);
     setTestStatus('idle');
     setTestMessage('');
   };
@@ -145,27 +248,39 @@ const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
     }));
   };
 
-  const handleSaveConnection = () => {
+  const handleSaveConnection = async () => {
     if (!newConnectionName.trim() || !newConnectionString.trim()) return;
 
     setSaving(true);
-    const newConnection = {
-      id: `custom_${Date.now()}`,
-      name: newConnectionName.trim(),
-      connectionString: newConnectionString.trim(),
-      createdAt: new Date().toISOString()
-    };
+    try {
+      let result;
+      if (selectedConnectionId) {
+        result = await updateConnection(selectedConnectionId, {
+          name: newConnectionName.trim(),
+          type: connDetails.type,
+          connection_string: newConnectionString.trim()
+        });
+      } else {
+        result = await createConnection({
+          name: newConnectionName.trim(),
+          type: connDetails.type,
+          connection_string: newConnectionString.trim()
+        });
+      }
 
-    const updated = [...customConnections, newConnection];
-    saveConnections(updated);
+      await loadConnections();
+      setShowCustomModal(false);
+      setNewConnectionName('');
+      setNewConnectionString('');
+      setSaving(false);
 
-    setShowCustomModal(false);
-    setNewConnectionName('');
-    setNewConnectionString('');
-    setSaving(false);
+      handleSelectCustomConnection(result);
 
-
-    handleSelectCustomConnection(newConnection);
+    } catch (error) {
+      setTestStatus('error');
+      setTestMessage(`Failed to save: ${error.message || 'Unknown error'}`);
+      setSaving(false);
+    }
   };
 
   const handleTestConnection = async () => {
@@ -186,12 +301,22 @@ const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
 
   const handleDeleteConnection = (e, connectionId) => {
     e.stopPropagation();
-    const updated = customConnections.filter(c => c.id !== connectionId);
-    saveConnections(updated);
+    setDeleteModal({ show: true, connectionId });
+  };
 
+  const confirmDeleteConnection = async () => {
+    const { connectionId } = deleteModal;
+    setDeleteModal({ show: false, connectionId: null });
 
-    if (selectedDatabase === connectionId) {
-      handleSelectDatabase('mysql');
+    try {
+      await deleteConnection(connectionId);
+      await loadConnections();
+
+      if (selectedDatabase === connectionId) {
+        handleSelectDatabase('mysql');
+      }
+    } catch (error) {
+      console.error("Failed to delete connection", error);
     }
   };
 
@@ -246,7 +371,9 @@ const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
               <span className="db-icon">{selectedDb.icon}</span>
-              <span className="db-name">{selectedDb.name}</span>
+              <div className="db-info">
+                <span className="db-name">{selectedDb.name}</span>
+              </div>
               <ChevronDown size={16} className={`dropdown-arrow ${isDropdownOpen ? 'open' : ''}`} />
             </button>
 
@@ -264,7 +391,12 @@ const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
                       onClick={() => handleSelectDatabase(db.id)}
                     >
                       <span className="db-icon">{db.icon}</span>
-                      <span className="db-name">{db.name}</span>
+                      <div className="db-info">
+                        <span className="db-name">{db.name}</span>
+                        {containerVersions[db.id] && (
+                          <span className="db-version" style={{ color: 'rgba(255,255,255,0.8)' }}>v{containerVersions[db.id]}</span>
+                        )}
+                      </div>
                       {selectedDatabase === db.id && <Check size={16} className="check-icon" />}
                     </button>
                   ))}
@@ -278,26 +410,45 @@ const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
 
                   {customConnections.length > 0 && (
                     <>
-                      {customConnections.map((conn) => (
-                        <button
-                          key={conn.id}
-                          className={`db-dropdown-item ${selectedDatabase === conn.id ? 'selected' : ''}`}
-                          onClick={() => handleSelectCustomConnection(conn)}
-                        >
-                          <span className="db-icon">🔗</span>
-                          <span className="db-name">{conn.name}</span>
-                          <div className="item-actions">
-                            {selectedDatabase === conn.id && <Check size={16} className="check-icon" />}
-                            <button
-                              className="delete-btn"
-                              onClick={(e) => handleDeleteConnection(e, conn.id)}
-                              data-tooltip="Delete connection"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </button>
-                      ))}
+                      {customConnections.map((conn) => {
+                        let icon = '🔗';
+                        if (conn.type === 'mysql') icon = '🐬';
+                        if (conn.type === 'postgres') icon = '🐘';
+                        if (conn.type === 'sqlserver') icon = '🗄️';
+
+                        return (
+                          <button
+                            key={conn.id}
+                            className={`db-dropdown-item ${selectedDatabase === conn.id ? 'selected' : ''}`}
+                            onClick={() => handleSelectCustomConnection(conn)}
+                          >
+                            <span className="db-icon">{icon}</span>
+                            <div className="db-info">
+                              <span className="db-name">{conn.name}</span>
+                              {conn.version && (
+                                <span className="db-version" style={{ color: selectedDatabase === conn.id ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)' }}>v{conn.version}</span>
+                              )}
+                            </div>
+                            <div className="item-actions">
+                              {selectedDatabase === conn.id && <Check size={16} className="check-icon" />}
+                              <button
+                                className="edit-btn"
+                                onClick={(e) => handleEditConnection(e, conn)}
+                                data-tooltip="Edit connection"
+                              >
+                                <Edit2 size={14} />
+                              </button>
+                              <button
+                                className="delete-btn"
+                                onClick={(e) => handleDeleteConnection(e, conn.id)}
+                                data-tooltip="Delete connection"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </button>
+                        );
+                      })}
                     </>
                   )}
 
@@ -329,7 +480,7 @@ const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
         <div className="modal-overlay">
           <div className="modal-content custom-connection-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h4>Add Custom Connection</h4>
+              <h4>{selectedConnectionId ? 'Edit Connection' : 'Add Custom Connection'}</h4>
               <button className="modal-close" onClick={() => setShowCustomModal(false)}>
                 <X size={20} />
               </button>
@@ -500,6 +651,16 @@ const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
           </div>
         </div>
       )}
+
+      <ConfirmationModal
+        isOpen={deleteModal.show}
+        onClose={() => setDeleteModal({ show: false, connectionId: null })}
+        onConfirm={confirmDeleteConnection}
+        title="Delete Connection"
+        message="Are you sure you want to delete this connection? This action cannot be undone."
+        confirmText="Delete"
+        isDangerous={true}
+      />
     </header>
   );
 };

@@ -3,6 +3,7 @@ from sqlalchemy import create_engine, text, inspect
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
 import logging
+import re
 
 from app.config import settings
 from app.models import DatabaseType
@@ -558,6 +559,50 @@ class DatabaseService:
                 engine.dispose()
                 logger.info(f"Closed connection for {db_type.value}")
         self._engines = {db_type: None for db_type in DatabaseType}
+
+    def get_database_version(self, db_type: DatabaseType, connection_string: Optional[str] = None) -> str:
+        try:
+            if db_type == DatabaseType.CUSTOM and connection_string:
+                engine = create_engine(
+                    connection_string,
+                    pool_pre_ping=True,
+                    pool_size=settings.db_pool_size,
+                    max_overflow=settings.db_max_overflow,
+                    pool_recycle=settings.db_pool_recycle,
+                    pool_timeout=settings.db_pool_timeout,
+                    execution_options={"timeout": settings.db_query_timeout}
+                )
+            else:
+                engine = self._get_engine(db_type)
+            
+            with engine.connect() as connection:
+                if db_type == DatabaseType.MYSQL or (db_type == DatabaseType.CUSTOM and 'mysql' in str(engine.url)):
+                    result = connection.execute(text("SELECT VERSION()"))
+                    version_str = result.scalar()
+                elif db_type == DatabaseType.POSTGRES or (db_type == DatabaseType.CUSTOM and 'postgres' in str(engine.url)):
+                    result = connection.execute(text("SELECT version()"))
+                    version_str = result.scalar() 
+                elif db_type == DatabaseType.SQLSERVER or (db_type == DatabaseType.CUSTOM and 'mssql' in str(engine.url)):
+                    result = connection.execute(text("SELECT @@VERSION"))
+                    version_str = result.scalar()
+                else:
+                    return "Unknown"
+                
+                if version_str and version_str != "Unknown":
+                    match = re.search(r'(\d+\.\d+(\.\d+)?)', version_str)
+                    if match:
+                        return match.group(1)
+                    
+                    match_year = re.search(r'SQL Server (\d{4})', version_str)
+                    if match_year:
+                        return match_year.group(1)
+                    
+                    return version_str.split('\n')[0]
+                    
+                return "Unknown"
+        except Exception as e:
+            logger.error(f"Failed to get version for {db_type.value}: {str(e)}")
+            return "Unknown"
 
 
 

@@ -65,7 +65,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
     
     async def dispatch(self, request: Request, call_next):
         
-        if request.url.path in self.PUBLIC_PATHS:
+        if request.method == "OPTIONS" or request.url.path in self.PUBLIC_PATHS:
             return await call_next(request)
         
         token = request.cookies.get("session_token")

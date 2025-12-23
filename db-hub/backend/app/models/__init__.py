@@ -8,6 +8,12 @@ from app.models.query_models import (
     UpdateRowRequest,
     DeleteRowRequest
 )
+from app.models.connection_models import (
+    SavedConnection,
+    ConnectionCreate,
+    ConnectionResponse,
+    ConnectionUpdate
+)
 
 __all__ = [
     "DatabaseType",
@@ -16,5 +22,9 @@ __all__ = [
     "DatabaseInfo",
     "ExportOptions",
     "UpdateRowRequest",
-    "DeleteRowRequest"
+    "DeleteRowRequest",
+    "SavedConnection",
+    "ConnectionCreate",
+    "ConnectionResponse",
+    "ConnectionUpdate"
 ]

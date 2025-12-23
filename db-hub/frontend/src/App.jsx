@@ -103,9 +103,10 @@ function AppContent() {
       }
 
       const result = await executeQuery(dbType, query, connectionString);
+      const duration = performance.now() - startTime;
+      result.executionTime = duration;
       setQueryResult(result);
 
-      const duration = performance.now() - startTime;
       const dbUsedForHistory = currentDbName || databaseTypeNames[selectedDatabase] || selectedDatabase;
 
       try {

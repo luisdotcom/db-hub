@@ -50,8 +50,16 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
 
     setLoadingDatabases(true);
     try {
-      const isCustom = selectedDatabase && selectedDatabase.startsWith('custom');
+      const dbStr = String(selectedDatabase);
+      const isCustom = dbStr.startsWith('custom') || (!['mysql', 'postgres', 'sqlserver'].includes(dbStr));
       const connStr = isCustom ? customConnection : null;
+
+      if (isCustom && !connStr) {
+        setDatabases([]);
+        setLoadingDatabases(false);
+        return;
+      }
+
       const dbList = await getDatabases(selectedDatabase, connStr);
       setDatabases(dbList || []);
     } catch (error) {
@@ -76,7 +84,8 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
 
     setLoading(true);
     try {
-      const isCustom = selectedDatabase && selectedDatabase.startsWith('custom');
+      const dbStr = String(selectedDatabase);
+      const isCustom = dbStr.startsWith('custom') || (!['mysql', 'postgres', 'sqlserver'].includes(dbStr));
 
       let connStr = isCustom ? customConnection : null;
       if (isCustom && currentDatabase) {
@@ -125,7 +134,8 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
 
   const handleSelectDatabase = async (dbName) => {
     try {
-      const isCustom = selectedDatabase && selectedDatabase.startsWith('custom');
+      const dbStr = String(selectedDatabase);
+      const isCustom = dbStr.startsWith('custom') || (!['mysql', 'postgres', 'sqlserver'].includes(dbStr));
       const connStr = isCustom ? customConnection : null;
 
       await selectDatabase(selectedDatabase, dbName, connStr);
@@ -172,7 +182,8 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
       setExporting(dbName);
       toast.info(`Exporting ${dbName}...`);
 
-      const isCustom = selectedDatabase && selectedDatabase.startsWith('custom');
+      const dbStr = String(selectedDatabase);
+      const isCustom = dbStr.startsWith('custom') || (!['mysql', 'postgres', 'sqlserver'].includes(dbStr));
       const connStr = isCustom ? customConnection : null;
 
       await exportDatabase(selectedDatabase, dbName, options, connStr);
@@ -195,7 +206,8 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
 
     setDeleting(dbName);
     try {
-      const isCustom = selectedDatabase && selectedDatabase.startsWith('custom');
+      const dbStr = String(selectedDatabase);
+      const isCustom = dbStr.startsWith('custom') || (!['mysql', 'postgres', 'sqlserver'].includes(dbStr));
       const dbType = isCustom ? 'custom' : selectedDatabase;
       const connStr = isCustom ? customConnection : null;
 
@@ -228,7 +240,8 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
 
     if (!tableDetails[tableName] && !expandedTables[tableName]) {
       try {
-        const isCustom = selectedDatabase && selectedDatabase.startsWith('custom');
+        const dbStr = String(selectedDatabase);
+        const isCustom = dbStr.startsWith('custom') || (!['mysql', 'postgres', 'sqlserver'].includes(dbStr));
         const dbType = isCustom ? 'custom' : selectedDatabase;
         let connStr = isCustom ? customConnection : null;
         if (isCustom && currentDatabase) {
@@ -370,7 +383,8 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
     let metadata = null;
     if (objectType === 'tables' && (action === 'select100' || action === 'selectAll')) {
       try {
-        const isCustom = selectedDatabase && selectedDatabase.startsWith('custom');
+        const dbStr = String(selectedDatabase);
+        const isCustom = dbStr.startsWith('custom') || (!['mysql', 'postgres', 'sqlserver'].includes(dbStr));
         const dbType = isCustom ? 'custom' : selectedDatabase;
         let connStr = isCustom ? customConnection : null;
         if (isCustom && currentDatabase) {

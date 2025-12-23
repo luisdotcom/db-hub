@@ -160,6 +160,15 @@ export const testConnection = async (databaseType) => {
   return response.data;
 };
 
+export const getDatabaseVersion = async (databaseType, connectionString = null) => {
+  let url = `/api/query/version/${databaseType}`;
+  if (connectionString) {
+    url += `?connection_string=${encodeURIComponent(connectionString)}`;
+  }
+  const response = await apiClient.get(url);
+  return response.data;
+};
+
 
 export const getViews = async (databaseType, connectionString = null) => {
   if (connectionString) {

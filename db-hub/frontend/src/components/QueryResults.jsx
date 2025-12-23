@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { CheckCircle, XCircle, Table, AlertCircle, FileDown, ArrowUp, ArrowDown, ArrowUpDown, Search, ChevronUp, ChevronDown, Pencil, Trash2, Check, X, Ban } from 'lucide-react';
+import { CheckCircle, XCircle, Table, AlertCircle, FileDown, ArrowUp, ArrowDown, ArrowUpDown, Search, ChevronUp, ChevronDown, Pencil, Trash2, Check, X, Ban, Clock } from 'lucide-react';
 import './QueryResults.css';
 import ConfirmationModal from './ConfirmationModal';
 
@@ -156,9 +156,19 @@ const QueryResults = ({ result, error, isCollapsed, onToggleCollapse, onUpdateRo
           {result && result.success ? <CheckCircle size={20} /> : error || (result && !result.success) ? <XCircle size={20} /> : <Table size={20} />}
           <h3>Query Results</h3>
           {result && (
-            <span className="row-count" style={{ marginLeft: '12px' }}>
-              {result?.rows?.length || 0} row(s) returned
-            </span>
+            <>
+              <span className="row-count" style={{ marginLeft: '12px' }}>
+                {result?.rows?.length || 0} row(s) returned
+              </span>
+              {result?.executionTime !== undefined && (
+                <span className="row-count" style={{ marginLeft: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Clock size={14} />
+                  {result.executionTime < 1000
+                    ? `${Math.round(result.executionTime)} ms`
+                    : `${(result.executionTime / 1000).toFixed(2)} s`}
+                </span>
+              )}
+            </>
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
