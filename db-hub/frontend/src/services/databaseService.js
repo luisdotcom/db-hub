@@ -208,3 +208,34 @@ export const exportDatabase = async (databaseType, databaseName, options = {}, c
   link.click();
   link.remove();
 };
+
+
+export const getPrimaryKeys = async (databaseType, tableName, connectionString = null) => {
+  let url = `/api/query/schema/primary-keys/${databaseType}/${tableName}`;
+  if (connectionString) {
+    url += `?connection_string=${encodeURIComponent(connectionString)}`;
+  }
+  const response = await apiClient.get(url);
+  return response.data;
+};
+
+export const updateTableRow = async (databaseType, tableName, pkData, newData, connectionString = null) => {
+  const response = await apiClient.post('/api/query/data/update', {
+    database_type: databaseType,
+    table_name: tableName,
+    pk_data: pkData,
+    new_data: newData,
+    connection_string: connectionString
+  });
+  return response.data;
+};
+
+export const deleteTableRow = async (databaseType, tableName, pkData, connectionString = null) => {
+  const response = await apiClient.post('/api/query/data/delete', {
+    database_type: databaseType,
+    table_name: tableName,
+    pk_data: pkData,
+    connection_string: connectionString
+  });
+  return response.data;
+};

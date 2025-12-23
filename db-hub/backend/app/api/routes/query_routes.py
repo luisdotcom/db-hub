@@ -5,7 +5,10 @@ from typing import List
 import logging
 import os
 
-from app.models import QueryRequest, QueryResponse, DatabaseType, ExportOptions
+from app.models import (
+    QueryRequest, QueryResponse, DatabaseType, ExportOptions,
+    UpdateRowRequest, DeleteRowRequest
+)
 from app.services import database_service, export_service
 from app.core.exceptions import QueryExecutionError, DatabaseConnectionError
 
@@ -127,6 +130,56 @@ async def get_table_schema(database_type: DatabaseType, table_name: str):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve table schema: {str(e)}"
+        )
+
+
+@router.get("/schema/primary-keys/{database_type}/{table_name}", response_model=List[str])
+async def get_primary_keys(database_type: DatabaseType, table_name: str, connection_string: str = None) -> List[str]:
+    try:
+        pks = database_service.get_primary_keys(database_type, table_name, connection_string)
+        return pks
+    except Exception as e:
+        logger.error(f"Error getting primary keys: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve primary keys: {str(e)}"
+        )
+
+
+@router.post("/data/update", response_model=bool)
+async def update_table_row(request: UpdateRowRequest) -> bool:
+    try:
+        success = database_service.update_table_row(
+            request.database_type,
+            request.table_name,
+            request.pk_data,
+            request.new_data,
+            request.connection_string
+        )
+        return success
+    except Exception as e:
+        logger.error(f"Error updating row: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update row: {str(e)}"
+        )
+
+
+@router.post("/data/delete", response_model=bool)
+async def delete_table_row(request: DeleteRowRequest) -> bool:
+    try:
+        success = database_service.delete_table_row(
+            request.database_type,
+            request.table_name,
+            request.pk_data,
+            request.connection_string
+        )
+        return success
+    except Exception as e:
+        logger.error(f"Error deleting row: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete row: {str(e)}"
         )
 
 

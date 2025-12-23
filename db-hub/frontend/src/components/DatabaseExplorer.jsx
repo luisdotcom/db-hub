@@ -1,42 +1,13 @@
 
 import { useState, useEffect } from 'react';
 import { ChevronRight, ChevronDown, ChevronUp, Table, Eye, Zap, Code, Database, RefreshCw, List, Hash, Info, Play, Plus, FolderOpen, X, Link, Trash2 } from 'lucide-react';
-import { getTables, getViews, getProcedures, getFunctions, getTriggers, getDatabases, createDatabase, selectDatabase, exportDatabase, getConnectionStringForDb, deleteDatabase } from '../services/databaseService';
+import { getTables, getViews, getProcedures, getFunctions, getTriggers, getDatabases, createDatabase, selectDatabase, exportDatabase, getConnectionStringForDb, deleteDatabase, getPrimaryKeys } from '../services/databaseService';
 import { useToast } from '../contexts/ToastContext';
 import './DatabaseExplorer.css';
+import ConfirmationModal from './ConfirmationModal';
 import ExportModal from './ExportModal';
 
 
-
-const DeleteModal = ({ isOpen, onClose, onConfirm, dbName }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="modal-overlay">
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <h4>Confirm Deletion</h4>
-        <div className="modal-body">
-          <p>Are you sure you want to delete database <strong>{dbName}</strong>?</p>
-          <p style={{ marginTop: '8px', color: 'var(--error)', fontSize: '13px' }}>
-            This action cannot be undone.
-          </p>
-        </div>
-        <div className="modal-actions">
-          <button className="modal-btn cancel" onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            className="modal-btn"
-            onClick={onConfirm}
-            style={{ background: 'var(--error)', color: 'white', border: 'none' }}
-          >
-            Delete
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, onObjectSelect, onLoadQuery, onDatabaseSelected }) => {
   const [databases, setDatabases] = useState([]);
@@ -344,11 +315,30 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
     }
   };
 
-  const handleQuickAction = (e, action, objectType, objectName) => {
+  const handleQuickAction = async (e, action, objectType, objectName) => {
     e.stopPropagation();
     const sql = generateSQL(action, objectType, objectName);
+
+    let metadata = null;
+    if (objectType === 'tables' && (action === 'select100' || action === 'selectAll')) {
+      try {
+        const isCustom = selectedDatabase && selectedDatabase.startsWith('custom');
+        const dbType = isCustom ? 'custom' : selectedDatabase;
+        let connStr = isCustom ? customConnection : null;
+        if (isCustom && currentDatabase) {
+          connStr = getConnectionStringForDb(customConnection, currentDatabase);
+        }
+
+        const pks = await getPrimaryKeys(dbType, objectName, connStr);
+
+        metadata = { tableName: objectName, primaryKeys: pks };
+      } catch (error) {
+        console.warn('Failed to fetch primary keys:', error);
+      }
+    }
+
     if (sql && onLoadQuery) {
-      onLoadQuery(sql);
+      onLoadQuery(sql, metadata);
     }
   };
 
@@ -706,11 +696,14 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
         </div>
       )}
 
-      <DeleteModal
+      <ConfirmationModal
         isOpen={deleteModal.show}
         onClose={() => setDeleteModal({ show: false, dbName: null })}
         onConfirm={confirmDelete}
-        dbName={deleteModal.dbName}
+        title="Confirm Deletion"
+        message={<span>Are you sure you want to delete database <strong>{deleteModal.dbName}</strong>?</span>}
+        confirmText="Delete"
+        isDangerous={true}
       />
 
       <ExportModal

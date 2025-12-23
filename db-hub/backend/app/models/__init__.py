@@ -4,7 +4,9 @@ from app.models.query_models import (
     QueryRequest,
     QueryResponse,
     DatabaseInfo,
-    ExportOptions
+    ExportOptions,
+    UpdateRowRequest,
+    DeleteRowRequest
 )
 
 __all__ = [
@@ -12,5 +14,7 @@ __all__ = [
     "QueryRequest",
     "QueryResponse",
     "DatabaseInfo",
-    "ExportOptions"
+    "ExportOptions",
+    "UpdateRowRequest",
+    "DeleteRowRequest"
 ]

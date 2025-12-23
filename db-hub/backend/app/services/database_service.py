@@ -283,6 +283,99 @@ class DatabaseService:
         except Exception as e:
             logger.error(f"Failed to get schema for table {table_name}: {str(e)}")
             return []
+
+    def get_primary_keys(self, db_type: DatabaseType, table_name: str, connection_string: Optional[str] = None) -> List[str]:
+        try:
+            if db_type == DatabaseType.CUSTOM and connection_string:
+                engine = create_engine(
+                    connection_string,
+                    pool_pre_ping=True,
+                    pool_recycle=3600
+                )
+            else:
+                engine = self._get_engine(db_type)
+
+            inspector = inspect(engine)
+            pk_constraint = inspector.get_pk_constraint(table_name)
+            return pk_constraint.get("constrained_columns", [])
+        except Exception as e:
+            logger.error(f"Failed to get primary keys for table {table_name}: {str(e)}")
+            return []
+
+    def update_table_row(
+        self,
+        db_type: DatabaseType,
+        table_name: str,
+        pk_data: Dict[str, Any],
+        new_data: Dict[str, Any],
+        connection_string: Optional[str] = None
+    ) -> bool:
+        try:
+            if not pk_data:
+                raise ValueError("Primary key data is required for updates")
+
+            if db_type == DatabaseType.CUSTOM and connection_string:
+                engine = create_engine(
+                    connection_string,
+                    pool_pre_ping=True,
+                    pool_recycle=3600
+                )
+            else:
+                engine = self._get_engine(db_type)
+            
+            set_clauses = [f"{col}=:new_{col}" for col in new_data.keys()]
+            where_clauses = [f"{col}=:pk_{col}" for col in pk_data.keys()]
+            
+            query = text(f"UPDATE {table_name} SET {', '.join(set_clauses)} WHERE {' AND '.join(where_clauses)}")
+            
+            params = {}
+            for col, val in new_data.items():
+                params[f"new_{col}"] = val
+            for col, val in pk_data.items():
+                params[f"pk_{col}"] = val
+                
+            with engine.connect() as connection:
+                result = connection.execute(query, params)
+                connection.commit()
+                return result.rowcount > 0
+                
+        except Exception as e:
+            logger.error(f"Failed to update row in {table_name}: {str(e)}")
+            raise QueryExecutionError(f"Update failed: {str(e)}")
+
+    def delete_table_row(
+        self,
+        db_type: DatabaseType,
+        table_name: str,
+        pk_data: Dict[str, Any],
+        connection_string: Optional[str] = None
+    ) -> bool:
+        try:
+            if not pk_data:
+                raise ValueError("Primary key data is required for deletion")
+                
+            if db_type == DatabaseType.CUSTOM and connection_string:
+                engine = create_engine(
+                    connection_string,
+                    pool_pre_ping=True,
+                    pool_recycle=3600
+                )
+            else:
+                engine = self._get_engine(db_type)
+            
+            where_clauses = [f"{col}=:pk_{col}" for col in pk_data.keys()]
+            query = text(f"DELETE FROM {table_name} WHERE {' AND '.join(where_clauses)}")
+            
+            params = {f"pk_{col}": val for col, val in pk_data.items()}
+            
+            with engine.connect() as connection:
+                result = connection.execute(query, params)
+                connection.commit()
+                return result.rowcount > 0
+                
+        except Exception as e:
+            logger.error(f"Failed to delete row from {table_name}: {str(e)}")
+            raise QueryExecutionError(f"Deletion failed: {str(e)}")
     
     def get_views(self, db_type: DatabaseType) -> List[str]:
         try:

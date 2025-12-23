@@ -61,3 +61,18 @@ class ExportOptions(BaseModel):
     procedures: List[str] = Field(default_factory=list)
     functions: List[str] = Field(default_factory=list)
     triggers: List[str] = Field(default_factory=list)
+
+
+class UpdateRowRequest(BaseModel):
+    database_type: DatabaseType = Field(..., description="Type of database")
+    table_name: str = Field(..., description="Name of the table to update")
+    pk_data: Dict[str, Any] = Field(..., description="Primary key values to identify the row")
+    new_data: Dict[str, Any] = Field(..., description="New values for the columns")
+    connection_string: Optional[str] = Field(None, description="Custom connection string if needed")
+
+
+class DeleteRowRequest(BaseModel):
+    database_type: DatabaseType = Field(..., description="Type of database")
+    table_name: str = Field(..., description="Name of the table to delete from")
+    pk_data: Dict[str, Any] = Field(..., description="Primary key values to identify the row")
+    connection_string: Optional[str] = Field(None, description="Custom connection string if needed")

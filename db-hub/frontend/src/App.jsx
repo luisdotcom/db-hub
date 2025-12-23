@@ -5,9 +5,11 @@ import DatabaseExplorer from './components/DatabaseExplorer';
 import QueryEditor from './components/QueryEditor';
 import QueryResults from './components/QueryResults';
 import Login from './components/Login';
-import { executeQuery, getConnectionStringForDb } from './services/databaseService';
+import { executeQuery, getConnectionStringForDb, updateTableRow, deleteTableRow, getPrimaryKeys } from './services/databaseService';
 import { useToast } from './contexts/ToastContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { useRegisterSW } from 'virtual:pwa-register/react';
+import ConfirmationModal from './components/ConfirmationModal';
 import TooltipController from './components/TooltipController';
 import './App.css';
 
@@ -22,7 +24,20 @@ function AppContent() {
   const [externalQuery, setExternalQuery] = useState('');
   const [editorCollapsed, setEditorCollapsed] = useState(false);
   const [resultsCollapsed, setResultsCollapsed] = useState(false);
+  const [queryContext, setQueryContext] = useState(null);
   const toast = useToast();
+
+  const {
+    needRefresh: [needRefresh, setNeedRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegistered(r) {
+      console.log('SW Registered: ' + r)
+    },
+    onRegisterError(error) {
+      console.log('SW registration error', error)
+    },
+  });
 
 
   const databaseTypeNames = {
@@ -52,8 +67,9 @@ function AppContent() {
     setCustomConnection(connectionString);
   };
 
-  const handleLoadQuery = (query) => {
+  const handleLoadQuery = (query, metadata = null) => {
     setExternalQuery(query);
+    setQueryContext(metadata);
     toast.info('Query loaded into editor');
   };
 
@@ -96,9 +112,80 @@ function AppContent() {
   };
 
   const handleObjectSelect = (type, name) => {
-
     toast.info(`Selected ${type}: ${name}`);
   };
+
+  const handleUpdateRow = async (rowIndex, rowData, newRowData) => {
+    try {
+      if (!queryContext || !queryContext.tableName || !queryContext.primaryKeys) {
+        throw new Error("Missing table context for update");
+      }
+
+      const isCustomConnection = selectedDatabase.startsWith('custom_');
+      const dbType = isCustomConnection ? 'custom' : selectedDatabase;
+      let connectionString = isCustomConnection ? customConnection : null;
+      if (isCustomConnection && currentDbName) {
+        connectionString = getConnectionStringForDb(customConnection, currentDbName);
+      }
+
+      const pkData = {};
+      queryContext.primaryKeys.forEach(pk => {
+        pkData[pk] = rowData[pk];
+      });
+
+      const success = await updateTableRow(dbType, queryContext.tableName, pkData, newRowData, connectionString);
+
+      if (success) {
+        toast.success("Row updated successfully");
+        const newRows = [...queryResult.rows];
+        newRows[rowIndex] = { ...newRows[rowIndex], ...newRowData };
+        setQueryResult({ ...queryResult, rows: newRows });
+        return true;
+      } else {
+        toast.error("Failed to update row");
+        return false;
+      }
+    } catch (error) {
+      toast.error(`Update error: ${error.message}`);
+      return false;
+    }
+  };
+
+  const handleDeleteRow = async (rowIndex, rowData) => {
+    try {
+      if (!queryContext || !queryContext.tableName || !queryContext.primaryKeys) {
+        throw new Error("Missing table context for deletion");
+      }
+
+      const isCustomConnection = selectedDatabase.startsWith('custom_');
+      const dbType = isCustomConnection ? 'custom' : selectedDatabase;
+      let connectionString = isCustomConnection ? customConnection : null;
+      if (isCustomConnection && currentDbName) {
+        connectionString = getConnectionStringForDb(customConnection, currentDbName);
+      }
+
+      const pkData = {};
+      queryContext.primaryKeys.forEach(pk => {
+        pkData[pk] = rowData[pk];
+      });
+
+      const success = await deleteTableRow(dbType, queryContext.tableName, pkData, connectionString);
+
+      if (success) {
+        toast.success("Row deleted successfully");
+        const newRows = queryResult.rows.filter((_, index) => index !== rowIndex);
+        setQueryResult({ ...queryResult, rows: newRows, rows_affected: (queryResult.rows_affected || 0) + 1 });
+        return true;
+      } else {
+        toast.error("Failed to delete row");
+        return false;
+      }
+    } catch (error) {
+      toast.error(`Delete error: ${error.message}`);
+      return false;
+    }
+  };
+
 
   if (isLoading) {
     return (
@@ -174,11 +261,23 @@ function AppContent() {
               error={queryError}
               isCollapsed={resultsCollapsed}
               onToggleCollapse={toggleResults}
+              onUpdateRow={handleUpdateRow}
+              onDeleteRow={handleDeleteRow}
+              canEdit={!!(queryContext?.tableName && queryContext?.primaryKeys?.length > 0)}
+              primaryKeys={queryContext?.primaryKeys || []}
             />
           </div>
         </div>
       </main>
       <TooltipController />
+      <ConfirmationModal
+        isOpen={needRefresh}
+        onClose={() => setNeedRefresh(false)}
+        onConfirm={() => updateServiceWorker(true)}
+        title="Update Available"
+        message="A new version of the application is available. Reload to update?"
+        confirmText="Reload"
+      />
     </div>
   );
 }

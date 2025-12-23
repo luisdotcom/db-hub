@@ -1,10 +1,15 @@
-import { useState, useMemo } from 'react';
-import { CheckCircle, XCircle, Table, AlertCircle, FileDown, ArrowUp, ArrowDown, ArrowUpDown, Search, ChevronUp, ChevronDown } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { CheckCircle, XCircle, Table, AlertCircle, FileDown, ArrowUp, ArrowDown, ArrowUpDown, Search, ChevronUp, ChevronDown, Pencil, Trash2, Check, X, Ban } from 'lucide-react';
 import './QueryResults.css';
+import ConfirmationModal from './ConfirmationModal';
 
-const QueryResults = ({ result, error, isCollapsed, onToggleCollapse }) => {
+const QueryResults = ({ result, error, isCollapsed, onToggleCollapse, onUpdateRow, onDeleteRow, canEdit, primaryKeys }) => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [searchTerm, setSearchTerm] = useState('');
+  const [editingRowIndex, setEditingRowIndex] = useState(null);
+  const [editData, setEditData] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [deleteModal, setDeleteModal] = useState({ show: false, row: null, index: null });
 
   const processedRows = useMemo(() => {
     if (!result?.rows) return [];
@@ -90,6 +95,59 @@ const QueryResults = ({ result, error, isCollapsed, onToggleCollapse }) => {
     setSortConfig({ key, direction });
   };
 
+  const startEdit = (row, index) => {
+    setEditingRowIndex(index);
+    setEditData({ ...row });
+  };
+
+  const cancelEdit = () => {
+    setEditingRowIndex(null);
+    setEditData({});
+  };
+
+  const saveEdit = async (index) => {
+    setIsSaving(true);
+    try {
+      const row = processedRows[index];
+      const success = await onUpdateRow(index, row, editData);
+      if (success) {
+        setEditingRowIndex(null);
+        setEditData({});
+      }
+    } catch (error) {
+      console.error("Failed to save edit:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+
+  const initiateDelete = (row, index) => {
+    setDeleteModal({ show: true, row, index });
+  };
+
+  const confirmDeleteRow = async () => {
+    const { row } = deleteModal;
+    setDeleteModal({ show: false, row: null, index: null });
+
+    const realIndex = result.rows.findIndex(r => {
+      if (primaryKeys && primaryKeys.length > 0) {
+        return primaryKeys.every(pk => r[pk] === row[pk]);
+      }
+      return r === row;
+    });
+
+    if (realIndex === -1) return;
+
+    await onDeleteRow(realIndex, row);
+  };
+
+  const handleEditChange = (column, value) => {
+    setEditData(prev => ({
+      ...prev,
+      [column]: value
+    }));
+  };
 
   return (
     <div className={`query-results ${isCollapsed ? 'collapsed' : ''}`}>
@@ -117,11 +175,11 @@ const QueryResults = ({ result, error, isCollapsed, onToggleCollapse }) => {
             </div>
           )}
           <div className="export-buttons">
-            <button className="export-btn" onClick={exportToJSON} data-tooltip="Export as JSON" disabled={!result?.rows}>
+            <button className="export-btn" onClick={exportToJSON} data-tooltip="Export as JSON" disabled={!result?.rows || error || !result?.success}>
               <FileDown size={16} />
               <span>JSON</span>
             </button>
-            <button className="export-btn" onClick={exportToExcel} data-tooltip="Export as CSV" disabled={!result?.rows}>
+            <button className="export-btn" onClick={exportToExcel} data-tooltip="Export as CSV" disabled={!result?.rows || error || !result?.success}>
               <FileDown size={16} />
               <span>CSV</span>
             </button>
@@ -139,7 +197,6 @@ const QueryResults = ({ result, error, isCollapsed, onToggleCollapse }) => {
 
       {!isCollapsed && (
         <>
-
           {(!result && !error) ? (
             <div className="empty-state" style={{ padding: '40px' }}>
               <Table size={48} className="empty-icon" />
@@ -159,6 +216,7 @@ const QueryResults = ({ result, error, isCollapsed, onToggleCollapse }) => {
               <table className="results-table">
                 <thead>
                   <tr>
+                    {canEdit && <th style={{ width: '80px' }}>Actions</th>}
                     {result.columns?.map((column, index) => (
                       <th
                         key={index}
@@ -179,12 +237,51 @@ const QueryResults = ({ result, error, isCollapsed, onToggleCollapse }) => {
                 </thead>
                 <tbody>
                   {processedRows.map((row, rowIndex) => (
-                    <tr key={rowIndex}>
+                    <tr key={rowIndex} className={editingRowIndex === rowIndex ? 'editing-row' : ''}>
+                      {canEdit && (
+                        <td className="actions-cell">
+                          {editingRowIndex === rowIndex ? (
+                            <div className="action-buttons">
+                              <button onClick={() => saveEdit(rowIndex)} disabled={isSaving} className="save-btn" title="Save">
+                                <Check size={16} />
+                              </button>
+                              <button onClick={cancelEdit} disabled={isSaving} className="cancel-btn" title="Cancel">
+                                <X size={16} />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="action-buttons">
+                              <button onClick={() => startEdit(row, rowIndex)} className="edit-btn" title="Edit">
+                                <Pencil size={14} />
+                              </button>
+                              <button onClick={() => initiateDelete(row, rowIndex)} className="delete-btn" title="Delete">
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      )}
+
                       {result.columns?.map((column, colIndex) => (
                         <td key={colIndex}>
-                          {row[column] !== null && row[column] !== undefined
-                            ? String(row[column])
-                            : <span className="null-value">NULL</span>}
+                          {editingRowIndex === rowIndex ? (
+                            primaryKeys.includes(column) ? (
+                              <span className="pk-value" title="Primary Key (Cannot Edit)">
+                                {row[column] !== null ? String(row[column]) : 'NULL'}
+                              </span>
+                            ) : (
+                              <input
+                                type="text"
+                                value={editData[column] !== null && editData[column] !== undefined ? editData[column] : ''}
+                                onChange={(e) => handleEditChange(column, e.target.value)}
+                                className="edit-input"
+                              />
+                            )
+                          ) : (
+                            row[column] !== null && row[column] !== undefined
+                              ? String(row[column])
+                              : <span className="null-value">NULL</span>
+                          )}
                         </td>
                       ))}
                     </tr>
@@ -195,6 +292,15 @@ const QueryResults = ({ result, error, isCollapsed, onToggleCollapse }) => {
           )}
         </>
       )}
+      <ConfirmationModal
+        isOpen={deleteModal.show}
+        onClose={() => setDeleteModal({ show: false, row: null, index: null })}
+        onConfirm={confirmDeleteRow}
+        title="Confirm Deletion"
+        message="Are you sure you want to delete this row?"
+        confirmText="Delete"
+        isDangerous={true}
+      />
     </div>
   );
 };
