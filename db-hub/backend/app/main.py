@@ -5,6 +5,7 @@ import logging
 from app.config import settings
 from app.api.routes import query_router
 from app.api.routes.auth_routes import router as auth_router
+from app.api.routes.history_routes import router as history_router
 from app.core.auth_middleware import AuthMiddleware
 
 
@@ -40,6 +41,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(query_router)
+app.include_router(history_router)
 
 
 @app.get("/")

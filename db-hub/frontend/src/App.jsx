@@ -1,17 +1,19 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from './components/Header';
 import DatabaseExplorer from './components/DatabaseExplorer';
 import QueryEditor from './components/QueryEditor';
 import QueryResults from './components/QueryResults';
 import Login from './components/Login';
-import { executeQuery, getConnectionStringForDb, updateTableRow, deleteTableRow, getPrimaryKeys } from './services/databaseService';
+import QueryHistory from './components/QueryHistory';
+import { executeQuery, getConnectionStringForDb, updateTableRow, deleteTableRow, getPrimaryKeys, addHistory } from './services/databaseService';
 import { useToast } from './contexts/ToastContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import ConfirmationModal from './components/ConfirmationModal';
 import TooltipController from './components/TooltipController';
 import './App.css';
+import { Clock } from 'lucide-react';
 
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -25,7 +27,18 @@ function AppContent() {
   const [editorCollapsed, setEditorCollapsed] = useState(false);
   const [resultsCollapsed, setResultsCollapsed] = useState(false);
   const [queryContext, setQueryContext] = useState(null);
+  const [showHistory, setShowHistory] = useState(false);
   const toast = useToast();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setQueryResult(null);
+      setQueryError(null);
+      setCurrentDbName(null);
+      setExternalQuery('');
+      setQueryContext(null);
+    }
+  }, [isAuthenticated]);
 
   const {
     needRefresh: [needRefresh, setNeedRefresh],
@@ -78,8 +91,9 @@ function AppContent() {
     setQueryError(null);
     setQueryResult(null);
 
-    try {
+    const startTime = performance.now();
 
+    try {
       const isCustomConnection = selectedDatabase.startsWith('custom_');
       const dbType = isCustomConnection ? 'custom' : selectedDatabase;
       let connectionString = isCustomConnection ? customConnection : null;
@@ -90,6 +104,22 @@ function AppContent() {
 
       const result = await executeQuery(dbType, query, connectionString);
       setQueryResult(result);
+
+      const duration = performance.now() - startTime;
+      const dbUsedForHistory = currentDbName || databaseTypeNames[selectedDatabase] || selectedDatabase;
+
+      try {
+        await addHistory(
+          query,
+          dbUsedForHistory,
+          'success',
+          duration,
+          result.rows_affected || (result.rows ? result.rows.length : 0)
+        );
+      } catch (histError) {
+        console.warn("Failed to save history:", histError);
+      }
+
 
       if (result.success) {
         if (result.rows && result.rows.length > 0) {
@@ -106,9 +136,31 @@ function AppContent() {
     } catch (error) {
       setQueryError(error.message);
       toast.error(`Error: ${error.message}`);
+
+      const duration = performance.now() - startTime;
+      const dbUsedForHistory = currentDbName || databaseTypeNames[selectedDatabase] || selectedDatabase;
+
+      try {
+        await addHistory(
+          query,
+          dbUsedForHistory,
+          'error',
+          duration,
+          0
+        );
+      } catch (histError) {
+        console.warn("Failed to save error history:", histError);
+      }
+
     } finally {
       setIsExecuting(false);
     }
+  };
+
+  const handleHistorySelect = (queryText) => {
+    setExternalQuery(queryText);
+    setShowHistory(false);
+    toast.info("Query restored from history");
   };
 
   const handleObjectSelect = (type, name) => {
@@ -229,6 +281,12 @@ function AppContent() {
 
   return (
     <div className="app">
+      <QueryHistory
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
+        onSelectQuery={handleHistorySelect}
+      />
+
       <Header
         selectedDatabase={selectedDatabase}
         onDatabaseChange={handleDatabaseTypeChange}
@@ -255,6 +313,7 @@ function AppContent() {
               onQueryChange={setExternalQuery}
               isCollapsed={editorCollapsed}
               onToggleCollapse={toggleEditor}
+              onHistoryClick={() => setShowHistory(true)}
             />
             <QueryResults
               result={queryResult}

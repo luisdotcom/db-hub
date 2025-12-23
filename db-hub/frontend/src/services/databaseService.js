@@ -42,6 +42,41 @@ export const getDatabases = async (databaseType, connectionString = null) => {
 };
 
 
+export const getIndexes = async (databaseType, tableName, connectionString = null) => {
+  let url = `/api/query/schema/indexes/${databaseType}/${tableName}`;
+  if (connectionString) {
+    url += `?connection_string=${encodeURIComponent(connectionString)}`;
+  }
+  const response = await apiClient.get(url);
+  return response.data;
+};
+
+export const getHistory = async (limit = 50) => {
+  const response = await apiClient.get(`/api/history/?limit=${limit}`);
+  return response.data;
+};
+
+export const addHistory = async (queryText, databaseName, status = 'success', executionTimeMs = 0, rowsAffected = 0) => {
+  const response = await apiClient.post('/api/history/', {
+    query_text: queryText,
+    database_name: databaseName,
+    status,
+    execution_time_ms: executionTimeMs,
+    rows_affected: rowsAffected
+  });
+  return response.data;
+};
+
+export const clearHistory = async () => {
+  const response = await apiClient.delete('/api/history/');
+  return response.data;
+};
+
+export const deleteHistoryItem = async (id) => {
+  const response = await apiClient.delete(`/api/history/${id}`);
+  return response.data;
+};
+
 export const createDatabase = async (databaseType, databaseName) => {
   const response = await apiClient.post(`/api/query/databases/${databaseType}?database_name=${encodeURIComponent(databaseName)}`);
   return response.data;
@@ -246,15 +281,6 @@ export const deleteTableRow = async (databaseType, tableName, pkData, connection
 
 export const getForeignKeys = async (databaseType, tableName, connectionString = null) => {
   let url = `/api/query/schema/foreign-keys/${databaseType}/${tableName}`;
-  if (connectionString) {
-    url += `?connection_string=${encodeURIComponent(connectionString)}`;
-  }
-  const response = await apiClient.get(url);
-  return response.data;
-};
-
-export const getIndexes = async (databaseType, tableName, connectionString = null) => {
-  let url = `/api/query/schema/indexes/${databaseType}/${tableName}`;
   if (connectionString) {
     url += `?connection_string=${encodeURIComponent(connectionString)}`;
   }

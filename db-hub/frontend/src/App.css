@@ -315,3 +315,7 @@ button {
     gap: 6px;
   }
 }
+
+.modal-overlay {
+  z-index: 2000 !important;
+}

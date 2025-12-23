@@ -1,13 +1,13 @@
 
 import { useState, useEffect, useRef } from 'react';
-import { Play, Loader, FileText, Table, Eye, Zap, Code, ChevronUp, ChevronDown, AlignLeft, Plus, MoreVertical, Save, FolderOpen } from 'lucide-react';
+import { Play, Loader, FileText, Table, Eye, Zap, Code, ChevronUp, ChevronDown, AlignLeft, Plus, MoreVertical, Save, FolderOpen, Clock } from 'lucide-react';
 import { format } from 'sql-formatter';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import './QueryEditor.css';
 
-const QueryEditor = ({ onExecute, isExecuting, selectedDatabase, externalQuery, onQueryChange, isCollapsed, onToggleCollapse }) => {
+const QueryEditor = ({ onExecute, isExecuting, selectedDatabase, externalQuery, onQueryChange, isCollapsed, onToggleCollapse, onHistoryClick }) => {
   const [query, setQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -269,7 +269,7 @@ END;`
           SQL Query
         </h2>
         <div className="help-buttons">
-          <div className="dropdown-container" style={{ marginRight: '8px' }}>
+          <div className="dropdown-container">
             <input
               type="file"
               accept=".sql"
@@ -291,7 +291,6 @@ END;`
             onClick={handleSaveQuery}
             disabled={!query.trim()}
             data-tooltip="Save Query"
-            style={{ marginRight: '8px' }}
           >
             <Save size={16} />
             <span>Save</span>
@@ -304,6 +303,14 @@ END;`
           >
             <AlignLeft size={16} />
             <span>Format</span>
+          </button>
+          <button
+            className="help-btn"
+            onClick={onHistoryClick}
+            data-tooltip="View History"
+          >
+            <Clock size={16} />
+            <span>History</span>
           </button>
           <div className="dropdown-container">
             <button

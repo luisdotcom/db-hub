@@ -322,4 +322,9 @@
     justify-content: center;
     width: 100%;
   }
+
+  .help-btn span, 
+  .dropdown-toggle span {
+    display: none;
+  }
 }

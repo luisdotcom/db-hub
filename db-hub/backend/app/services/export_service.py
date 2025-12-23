@@ -263,7 +263,6 @@ async def export_database(db_type: str, db_name: str, connection_string: Optiona
         error_msg = e.stderr
         logger.error(f"Export failed: {error_msg}")
         
-        # Check for common permission errors
         if "Access denied" in error_msg:
              raise RuntimeError(f"Permission denied: The database user does not have sufficient privileges to export this database. Details: {error_msg.strip()}")
         elif "LOCK TABLES" in error_msg:
