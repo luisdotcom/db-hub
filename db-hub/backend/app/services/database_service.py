@@ -40,7 +40,11 @@ class DatabaseService:
             return create_engine(
                 connection_string,
                 pool_pre_ping=True,
-                pool_recycle=3600
+                pool_size=settings.db_pool_size,
+                max_overflow=settings.db_max_overflow,
+                pool_recycle=settings.db_pool_recycle,
+                pool_timeout=settings.db_pool_timeout,
+                execution_options={"timeout": settings.db_query_timeout}
             )
 
         if self._engines[db_type] is None:
@@ -49,7 +53,11 @@ class DatabaseService:
                 self._engines[db_type] = create_engine(
                     connection_string,
                     pool_pre_ping=True,
-                    pool_recycle=3600
+                    pool_size=settings.db_pool_size,
+                    max_overflow=settings.db_max_overflow,
+                    pool_recycle=settings.db_pool_recycle,
+                    pool_timeout=settings.db_pool_timeout,
+                    execution_options={"timeout": settings.db_query_timeout}
                 )
                 logger.info(f"Created engine for {db_type.value}")
             except Exception as e:
@@ -80,7 +88,11 @@ class DatabaseService:
                 engine = create_engine(
                     connection_string,
                     pool_pre_ping=True,
-                    pool_recycle=3600
+                    pool_size=settings.db_pool_size,
+                    max_overflow=settings.db_max_overflow,
+                    pool_recycle=settings.db_pool_recycle,
+                    pool_timeout=settings.db_pool_timeout,
+                    execution_options={"timeout": settings.db_query_timeout}
                 )
             else:
                 engine = self._get_engine(db_type)
@@ -169,7 +181,11 @@ class DatabaseService:
                 engine = create_engine(
                     connection_string,
                     pool_pre_ping=True,
-                    pool_recycle=3600
+                    pool_size=settings.db_pool_size,
+                    max_overflow=settings.db_max_overflow,
+                    pool_recycle=settings.db_pool_recycle,
+                    pool_timeout=settings.db_pool_timeout,
+                    execution_options={"timeout": settings.db_query_timeout}
                 )
                 if 'mysql' in connection_string:
                     dialect = DatabaseType.MYSQL
@@ -254,7 +270,11 @@ class DatabaseService:
             self._engines[db_type] = create_engine(
                 new_string,
                 pool_pre_ping=True,
-                pool_recycle=3600
+                pool_size=settings.db_pool_size,
+                max_overflow=settings.db_max_overflow,
+                pool_recycle=settings.db_pool_recycle,
+                pool_timeout=settings.db_pool_timeout,
+                execution_options={"timeout": settings.db_query_timeout}
             )
             
             logger.info(f"Selected database {database_name} on {db_type.value}")
@@ -297,7 +317,11 @@ class DatabaseService:
                 engine = create_engine(
                     connection_string,
                     pool_pre_ping=True,
-                    pool_recycle=3600
+                    pool_size=settings.db_pool_size,
+                    max_overflow=settings.db_max_overflow,
+                    pool_recycle=settings.db_pool_recycle,
+                    pool_timeout=settings.db_pool_timeout,
+                    execution_options={"timeout": settings.db_query_timeout}
                 )
             else:
                 engine = self._get_engine(db_type)
@@ -315,7 +339,11 @@ class DatabaseService:
                 engine = create_engine(
                     connection_string,
                     pool_pre_ping=True,
-                    pool_recycle=3600
+                    pool_size=settings.db_pool_size,
+                    max_overflow=settings.db_max_overflow,
+                    pool_recycle=settings.db_pool_recycle,
+                    pool_timeout=settings.db_pool_timeout,
+                    execution_options={"timeout": settings.db_query_timeout}
                 )
             else:
                 engine = self._get_engine(db_type)
@@ -332,7 +360,11 @@ class DatabaseService:
                 engine = create_engine(
                     connection_string,
                     pool_pre_ping=True,
-                    pool_recycle=3600
+                    pool_size=settings.db_pool_size,
+                    max_overflow=settings.db_max_overflow,
+                    pool_recycle=settings.db_pool_recycle,
+                    pool_timeout=settings.db_pool_timeout,
+                    execution_options={"timeout": settings.db_query_timeout}
                 )
             else:
                 engine = self._get_engine(db_type)
@@ -359,7 +391,11 @@ class DatabaseService:
                 engine = create_engine(
                     connection_string,
                     pool_pre_ping=True,
-                    pool_recycle=3600
+                    pool_size=settings.db_pool_size,
+                    max_overflow=settings.db_max_overflow,
+                    pool_recycle=settings.db_pool_recycle,
+                    pool_timeout=settings.db_pool_timeout,
+                    execution_options={"timeout": settings.db_query_timeout}
                 )
             else:
                 engine = self._get_engine(db_type)
@@ -399,7 +435,11 @@ class DatabaseService:
                 engine = create_engine(
                     connection_string,
                     pool_pre_ping=True,
-                    pool_recycle=3600
+                    pool_size=settings.db_pool_size,
+                    max_overflow=settings.db_max_overflow,
+                    pool_recycle=settings.db_pool_recycle,
+                    pool_timeout=settings.db_pool_timeout,
+                    execution_options={"timeout": settings.db_query_timeout}
                 )
             else:
                 engine = self._get_engine(db_type)

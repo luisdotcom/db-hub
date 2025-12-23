@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     auth_password: str = "this-is-a-secure-password-100%"
     session_secret: str = "change-this-secret-in-production-use-a-random-string"
     
+    db_pool_size: int = 5
+    db_max_overflow: int = 10
+    db_pool_recycle: int = 3600
+    db_pool_timeout: int = 30
+    db_query_timeout: int = 60
+    
     class Config:
         env_file = ".env"
         case_sensitive = False
