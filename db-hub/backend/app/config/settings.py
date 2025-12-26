@@ -4,11 +4,13 @@ from urllib.parse import quote_plus
 
 
 class Settings(BaseSettings):
+
     mysql_host: str = "localhost"
     mysql_port: int = 9306
     mysql_user: str = "luisdotcom"
     mysql_password: str
     mysql_database: str = "master"
+    mysql_root_password: str = "rootpassword"
     
 
     postgres_host: str = "localhost"

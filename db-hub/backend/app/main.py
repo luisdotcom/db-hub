@@ -8,7 +8,8 @@ from app.api.routes.auth_routes import router as auth_router
 from app.api.routes.history_routes import router as history_router
 from app.api.connections import router as connections_router
 from app.core.auth_middleware import AuthMiddleware
-
+from app.core.db_init import init_mysql_permissions
+from contextlib import asynccontextmanager
 
 logging.basicConfig(
     level=logging.INFO,
@@ -17,13 +18,18 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_mysql_permissions()
+    yield
 
 app = FastAPI(
     title="Database Query API",
     description="Modern API for executing queries on MySQL and PostgreSQL databases",
     version="1.0.0",
     docs_url="/api/docs",
-    redoc_url="/api/redoc"
+    redoc_url="/api/redoc",
+    lifespan=lifespan
 )
 
 

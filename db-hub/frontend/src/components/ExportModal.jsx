@@ -47,7 +47,8 @@ const ExportModal = ({ isOpen, onClose, onExport, databaseName, databaseType, cu
     const loadObjects = async () => {
         setLoading(true);
         try {
-            const isCustom = databaseType && databaseType.startsWith('custom');
+            const isCustom = (typeof databaseType === 'string' && databaseType.startsWith('custom')) ||
+                typeof databaseType === 'number';
             let connStr = isCustom ? customConnection : null;
             if (isCustom && databaseName) {
                 connStr = getConnectionStringForDb(customConnection, databaseName);

@@ -607,3 +607,44 @@
   flex: 1;
   min-width: 0;
 }
+
+.filter-container {
+  padding: 0 12px 8px 16px;
+  animation: slideUp var(--transition-fast) ease-out;
+}
+
+.filter-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.filter-icon {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.filter-input {
+  width: 100%;
+  padding: 6px 10px 6px 30px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-size: 13px;
+  transition: all var(--transition-fast);
+}
+
+.filter-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background: var(--surface-hover);
+}
+
+.filter-input::placeholder {
+  color: var(--text-secondary);
+  font-style: italic;
+}

@@ -94,7 +94,7 @@ function AppContent() {
     const startTime = performance.now();
 
     try {
-      const isCustomConnection = selectedDatabase.startsWith('custom_');
+      const isCustomConnection = typeof selectedDatabase === 'string' ? selectedDatabase.startsWith('custom_') : true;
       const dbType = isCustomConnection ? 'custom' : selectedDatabase;
       let connectionString = isCustomConnection ? customConnection : null;
 
@@ -174,7 +174,7 @@ function AppContent() {
         throw new Error("Missing table context for update");
       }
 
-      const isCustomConnection = selectedDatabase.startsWith('custom_');
+      const isCustomConnection = typeof selectedDatabase === 'string' ? selectedDatabase.startsWith('custom_') : true;
       const dbType = isCustomConnection ? 'custom' : selectedDatabase;
       let connectionString = isCustomConnection ? customConnection : null;
       if (isCustomConnection && currentDbName) {
@@ -210,7 +210,7 @@ function AppContent() {
         throw new Error("Missing table context for deletion");
       }
 
-      const isCustomConnection = selectedDatabase.startsWith('custom_');
+      const isCustomConnection = typeof selectedDatabase === 'string' ? selectedDatabase.startsWith('custom_') : true;
       const dbType = isCustomConnection ? 'custom' : selectedDatabase;
       let connectionString = isCustomConnection ? customConnection : null;
       if (isCustomConnection && currentDbName) {

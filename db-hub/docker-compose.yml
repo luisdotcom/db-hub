@@ -1,5 +1,4 @@
 services:
-  # Servicio de Frontend
   frontend:
     build: ./frontend
     container_name: mi-frontend
@@ -9,7 +8,6 @@ services:
     depends_on:
       - backend
 
-  # Servicio de Backend
   backend:
     build: ./backend
     container_name: mi-backend
@@ -41,7 +39,6 @@ services:
       - postgres
       - sqlserver
 
-  # Servicio de MySQL
   mysql:
     image: mysql:8.0
     container_name: mi-mysql
@@ -55,9 +52,7 @@ services:
       - "9306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./docker/mysql/init:/docker-entrypoint-initdb.d
 
-  # Servicio de PostgreSQL
   postgres:
     image: postgres:16
     container_name: mi-postgres
@@ -71,7 +66,6 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  # Servicio de SQL Server
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: mi-sqlserver

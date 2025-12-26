@@ -1,2 +1,0 @@
-GRANT ALL PRIVILEGES ON *.* TO 'luisdotcom'@'%';
-FLUSH PRIVILEGES;

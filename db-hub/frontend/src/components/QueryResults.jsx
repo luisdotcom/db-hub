@@ -226,7 +226,7 @@ const QueryResults = ({ result, error, isCollapsed, onToggleCollapse, onUpdateRo
               <table className="results-table">
                 <thead>
                   <tr>
-                    {canEdit && <th style={{ width: '80px' }}>Actions</th>}
+                    {canEdit && <th className="actions-header" style={{ width: '80px' }}>Actions</th>}
                     {result.columns?.map((column, index) => (
                       <th
                         key={index}

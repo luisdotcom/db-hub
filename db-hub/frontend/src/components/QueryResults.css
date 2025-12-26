@@ -152,13 +152,14 @@
 }
 
 .results-table thead {
-  background: var(--background);
-  position: sticky;
-  top: 0;
   z-index: 10;
 }
 
 .results-table th {
+  position: sticky;
+  top: 0;
+  background: var(--background);
+  z-index: 10;
   padding: 0.75rem 1rem;
   text-align: left;
   font-weight: 600;
@@ -294,11 +295,20 @@
   border-left: 3px solid var(--primary);
 }
 
+.results-table th.actions-header {
+  position: sticky;
+  left: 0;
+  top: 0;
+  z-index: 20;
+  background-color: var(--background);
+  border-right: 1px solid var(--border);
+}
+
 .actions-cell {
   position: sticky;
   left: 0;
   background-color: var(--surface);
-  z-index: 5;
+  z-index: 15;
   border-right: 1px solid var(--border);
 }
 
