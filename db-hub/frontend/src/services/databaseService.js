@@ -17,6 +17,7 @@ const getDbTypeFromStr = (str) => {
   if (str.startsWith('mysql')) return 'mysql';
   if (str.startsWith('postgresql') || str.startsWith('postgres')) return 'postgres';
   if (str.startsWith('mssql')) return 'sqlserver';
+  if (str.startsWith('sqlite')) return 'sqlite';
   return 'mysql';
 };
 
@@ -27,15 +28,21 @@ export const getDatabases = async (databaseType, connectionString = null) => {
     if (type === 'mysql') query = "SHOW DATABASES";
     else if (type === 'postgres') query = "SELECT datname FROM pg_database WHERE datistemplate = false ORDER BY datname";
     else if (type === 'sqlserver') query = "SELECT name FROM sys.databases ORDER BY name";
+    else if (type === 'sqlite') {
+        return [];
+    }
     
-    const result = await executeQuery('custom', query, connectionString);
-    if (!result.success) throw new Error(result.message);
-    
-    return result.rows.map(row => Object.values(row)[0]).filter(db => {
-      if (type === 'mysql') return !['information_schema', 'mysql', 'performance_schema', 'sys'].includes(db);
-      if (type === 'postgres') return !['postgres'].includes(db);
-      return true;
-    });
+    if (type !== 'sqlite') {
+        const result = await executeQuery('custom', query, connectionString);
+        if (!result.success) throw new Error(result.message);
+        
+        return result.rows.map(row => Object.values(row)[0]).filter(db => {
+        if (type === 'mysql') return !['information_schema', 'mysql', 'performance_schema', 'sys'].includes(db);
+        if (type === 'postgres') return !['postgres'].includes(db);
+        return true;
+        });
+    }
+    return [];
   }
   const response = await apiClient.get(`/api/query/databases/${databaseType}`);
   return response.data;
@@ -103,6 +110,8 @@ export const getConnectionStringForDb = (connectionString, dbName) => {
                                         .replace('mssql+pyodbc://', 'http://'));
     
     const protocol = connectionString.split('://')[0];
+
+    if (type === 'sqlite') return connectionString;
     
     if (type === 'sqlserver') {
        const parts = connectionString.split('?');
@@ -135,6 +144,7 @@ export const getTables = async (databaseType, connectionString = null) => {
     if (type === 'mysql') query = "SHOW FULL TABLES WHERE Table_Type = 'BASE TABLE'";
     else if (type === 'postgres') query = "SELECT tablename FROM pg_tables WHERE schemaname = 'public'";
     else if (type === 'sqlserver') query = "SELECT name FROM sys.tables";
+    else if (type === 'sqlite') query = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'";
 
     const result = await executeQuery('custom', query, connectionString);
     if (!result.success) throw new Error(result.message);
@@ -177,6 +187,7 @@ export const getViews = async (databaseType, connectionString = null) => {
     if (type === 'mysql') query = "SHOW FULL TABLES WHERE Table_Type = 'VIEW'";
     else if (type === 'postgres') query = "SELECT viewname FROM pg_views WHERE schemaname = 'public'";
     else if (type === 'sqlserver') query = "SELECT name FROM sys.views";
+    else if (type === 'sqlite') query = "SELECT name FROM sqlite_master WHERE type='view'";
 
     const result = await executeQuery('custom', query, connectionString);
     if (!result.success) throw new Error(result.message);
@@ -194,10 +205,14 @@ export const getProcedures = async (databaseType, connectionString = null) => {
     if (type === 'mysql') query = "SELECT ROUTINE_NAME, ROUTINE_TYPE FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = DATABASE() AND ROUTINE_TYPE = 'PROCEDURE'";
     else if (type === 'postgres') query = "SELECT proname FROM pg_proc p JOIN pg_namespace n ON p.pronamespace = n.oid WHERE n.nspname = 'public' AND prokind = 'p'";
     else if (type === 'sqlserver') query = "SELECT name FROM sys.procedures";
+    else if (type === 'sqlite') return []; 
 
-    const result = await executeQuery('custom', query, connectionString);
-    if (!result.success) throw new Error(result.message);
-    return result.rows.map(row => ({ name: Object.values(row)[0], type: 'PROCEDURE' }));
+    if (type !== 'sqlite') {
+        const result = await executeQuery('custom', query, connectionString);
+        if (!result.success) throw new Error(result.message);
+        return result.rows.map(row => ({ name: Object.values(row)[0], type: 'PROCEDURE' }));
+    }
+    return [];
   }
   const response = await apiClient.get(`/api/query/procedures/${databaseType}`);
   return response.data;
@@ -211,10 +226,14 @@ export const getFunctions = async (databaseType, connectionString = null) => {
     if (type === 'mysql') query = "SELECT ROUTINE_NAME, ROUTINE_TYPE FROM information_schema.ROUTINES WHERE ROUTINE_SCHEMA = DATABASE() AND ROUTINE_TYPE = 'FUNCTION'";
     else if (type === 'postgres') query = "SELECT proname FROM pg_proc p JOIN pg_namespace n ON p.pronamespace = n.oid WHERE n.nspname = 'public' AND prokind = 'f'";
     else if (type === 'sqlserver') query = "SELECT name FROM sys.objects WHERE type IN ('FN', 'IF', 'TF')";
+    else if (type === 'sqlite') return []; 
 
-     const result = await executeQuery('custom', query, connectionString);
-    if (!result.success) throw new Error(result.message);
-    return result.rows.map(row => ({ name: Object.values(row)[0], type: 'FUNCTION' }));
+    if (type !== 'sqlite') {
+        const result = await executeQuery('custom', query, connectionString);
+        if (!result.success) throw new Error(result.message);
+        return result.rows.map(row => ({ name: Object.values(row)[0], type: 'FUNCTION' }));
+    }
+    return [];
   }
   const response = await apiClient.get(`/api/query/functions/${databaseType}`);
   return response.data;
@@ -228,6 +247,7 @@ export const getTriggers = async (databaseType, connectionString = null) => {
     if (type === 'mysql') query = "SELECT TRIGGER_NAME FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA = DATABASE()";
     else if (type === 'postgres') query = "SELECT tgname FROM pg_trigger t JOIN pg_class c ON t.tgrelid = c.oid JOIN pg_namespace n ON c.relnamespace = n.oid WHERE n.nspname = 'public' AND NOT t.tgisinternal";
     else if (type === 'sqlserver') query = "SELECT name FROM sys.triggers";
+    else if (type === 'sqlite') query = "SELECT name FROM sqlite_master WHERE type='trigger'";
 
     const result = await executeQuery('custom', query, connectionString);
     if (!result.success) throw new Error(result.message);

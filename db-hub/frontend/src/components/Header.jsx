@@ -1,6 +1,5 @@
-
 import { useState, useRef, useEffect } from 'react';
-import { Sun, Moon, Database, ChevronDown, Check, Container, Plus, Trash2, X, Github, Play, AlertCircle, Loader2, LogOut, Edit2 } from 'lucide-react';
+import { Sun, Moon, Database, ChevronDown, Check, Container, Plus, Trash2, X, Github, Play, AlertCircle, Loader2, LogOut, Edit2, HardDrive } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import logo from '../assets/logo.png';
@@ -8,12 +7,14 @@ import { executeQuery, getDatabaseVersion } from '../services/databaseService';
 import { getConnections, createConnection, updateConnection, deleteConnection } from '../services/connectionService';
 import './Header.css';
 import ConfirmationModal from './ConfirmationModal';
+import SQLiteManagerModal from './SQLiteManagerModal';
 
 const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
   const { theme, toggleTheme } = useTheme();
   const { logout } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showCustomModal, setShowCustomModal] = useState(false);
+  const [showSQLiteModal, setShowSQLiteModal] = useState(false);
   const [customConnections, setCustomConnections] = useState([]);
   const [newConnectionName, setNewConnectionName] = useState('');
   const [newConnectionString, setNewConnectionString] = useState('');
@@ -103,7 +104,14 @@ const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
       if (customDb.type === 'mysql') icon = '🐬';
       if (customDb.type === 'postgres') icon = '🐘';
       if (customDb.type === 'sqlserver') icon = '🗄️';
+      if (customDb.type === 'sqlite') icon = '📄';
+      if (customDb.connection_string.startsWith('sqlite')) icon = '📄';
       return { id: customDb.id, name: customDb.name, icon: icon };
+    }
+
+    if (typeof selectedDatabase === 'string' && selectedDatabase.startsWith('sqlite')) {
+      const filename = selectedDatabase.split('/').pop();
+      return { id: selectedDatabase, name: filename, icon: '📄' };
     }
 
     return containerDatabases[0];
@@ -133,6 +141,15 @@ const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
     if (onCustomConnection) {
       onCustomConnection(connection.connection_string);
     }
+    setIsDropdownOpen(false);
+  };
+
+  const handleConnectSQLite = (connectionString) => {
+    onDatabaseChange(connectionString, connectionString);
+    if (onCustomConnection) {
+      onCustomConnection(connectionString);
+    }
+    setShowSQLiteModal(false);
     setIsDropdownOpen(false);
   };
 
@@ -415,6 +432,7 @@ const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
                         if (conn.type === 'mysql') icon = '🐬';
                         if (conn.type === 'postgres') icon = '🐘';
                         if (conn.type === 'sqlserver') icon = '🗄️';
+                        if (conn.type === 'sqlite' || conn.connection_string.startsWith('sqlite')) icon = '📄';
 
                         return (
                           <button
@@ -458,6 +476,23 @@ const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
                   >
                     <Plus size={16} />
                     <span className="db-name">Add Connection...</span>
+                  </button>
+                </div>
+
+                <div className="dropdown-group">
+                  <div className="dropdown-group-header">
+                    <HardDrive size={14} />
+                    <span>SQLite</span>
+                  </div>
+                  <button
+                    className="db-dropdown-item add-custom"
+                    onClick={() => {
+                      setShowSQLiteModal(true);
+                      setIsDropdownOpen(false);
+                    }}
+                  >
+                    <Plus size={16} />
+                    <span className="db-name">Manage</span>
                   </button>
                 </div>
               </div>
@@ -660,6 +695,12 @@ const Header = ({ selectedDatabase, onDatabaseChange, onCustomConnection }) => {
         message="Are you sure you want to delete this connection? This action cannot be undone."
         confirmText="Delete"
         isDangerous={true}
+      />
+
+      <SQLiteManagerModal
+        isOpen={showSQLiteModal}
+        onClose={() => setShowSQLiteModal(false)}
+        onConnect={handleConnectSQLite}
       />
     </header>
   );

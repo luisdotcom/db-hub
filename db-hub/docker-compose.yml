@@ -34,6 +34,7 @@ services:
       - SESSION_SECRET=your-production-secret-change-this-to-random-string
     volumes:
       - ./backend:/app
+      - dbhub_sqlite_data:/app/data
     depends_on:
       - mysql
       - postgres
@@ -83,3 +84,4 @@ volumes:
   mysql_data:
   postgres_data:
   sqlserver_data:
+  dbhub_sqlite_data:

@@ -256,19 +256,19 @@ const QueryResults = ({ result, error, isCollapsed, onToggleCollapse, onUpdateRo
                         <td className="actions-cell">
                           {editingRowIndex === rowIndex ? (
                             <div className="action-buttons">
-                              <button onClick={() => saveEdit(rowIndex)} disabled={isSaving} className="save-btn" title="Save">
+                              <button onClick={() => saveEdit(rowIndex)} disabled={isSaving} className="save-btn" data-tooltip="Save">
                                 <Check size={16} />
                               </button>
-                              <button onClick={cancelEdit} disabled={isSaving} className="cancel-btn" title="Cancel">
+                              <button onClick={cancelEdit} disabled={isSaving} className="cancel-btn" data-tooltip="Cancel">
                                 <X size={16} />
                               </button>
                             </div>
                           ) : (
                             <div className="action-buttons">
-                              <button onClick={() => startEdit(row, rowIndex)} className="edit-btn" title="Edit">
+                              <button onClick={() => startEdit(row, rowIndex)} className="edit-btn" data-tooltip="Edit">
                                 <Pencil size={14} />
                               </button>
-                              <button onClick={() => initiateDelete(row, rowIndex)} className="delete-btn" title="Delete">
+                              <button onClick={() => initiateDelete(row, rowIndex)} className="delete-btn" data-tooltip="Delete">
                                 <Trash2 size={14} />
                               </button>
                             </div>
@@ -280,7 +280,7 @@ const QueryResults = ({ result, error, isCollapsed, onToggleCollapse, onUpdateRo
                         <td key={colIndex}>
                           {editingRowIndex === rowIndex ? (
                             primaryKeys.includes(column) ? (
-                              <span className="pk-value" title="Primary Key (Cannot Edit)">
+                              <span className="pk-value" data-tooltip="Primary Key (Cannot Edit)">
                                 {row[column] !== null ? String(row[column]) : 'NULL'}
                               </span>
                             ) : (

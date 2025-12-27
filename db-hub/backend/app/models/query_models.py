@@ -8,6 +8,7 @@ class DatabaseType(str, Enum):
     POSTGRES = "postgres"
     SQLSERVER = "sqlserver"
     CUSTOM = "custom"
+    SQLITE = "sqlite"
 
 
 class QueryRequest(BaseModel):

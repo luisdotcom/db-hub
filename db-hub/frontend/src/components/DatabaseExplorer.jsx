@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { ChevronRight, ChevronDown, ChevronUp, Table, Eye, Zap, Code, Database, RefreshCw, List, Hash, Info, Play, Plus, FolderOpen, X, Link, Trash2, Key, GitMerge, FileText, Search } from 'lucide-react';
 import { getTables, getViews, getProcedures, getFunctions, getTriggers, getDatabases, createDatabase, selectDatabase, exportDatabase, getConnectionStringForDb, deleteDatabase, getPrimaryKeys, getForeignKeys, getIndexes, getTableSchema } from '../services/databaseService';
 import { useToast } from '../contexts/ToastContext';
+import apiClient from '../config/api';
 import './DatabaseExplorer.css';
 import ConfirmationModal from './ConfirmationModal';
 import ExportModal from './ExportModal';
@@ -55,6 +56,13 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
       const isCustom = (typeof dbStr === 'string' && dbStr.startsWith('custom')) ||
         typeof dbStr === 'number' ||
         (!['mysql', 'postgres', 'sqlserver'].includes(dbStr));
+
+      if (typeof dbStr === 'string' && dbStr.startsWith('sqlite')) {
+        setDatabases(['main']);
+        setLoadingDatabases(false);
+        return;
+      }
+
       const connStr = isCustom ? customConnection : null;
 
       if (isCustom && !connStr) {
@@ -93,7 +101,9 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
         (!['mysql', 'postgres', 'sqlserver'].includes(dbStr));
 
       let connStr = isCustom ? customConnection : null;
-      if (isCustom && currentDatabase) {
+      if (typeof selectedDatabase === 'string' && selectedDatabase.startsWith('sqlite')) {
+        connStr = selectedDatabase;
+      } else if (isCustom && currentDatabase) {
         connStr = getConnectionStringForDb(customConnection, currentDatabase);
       }
 
@@ -177,8 +187,35 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
     }
   };
 
-  const handleExportDatabase = (e, dbName) => {
+  const handleExportDatabase = async (e, dbName) => {
     e.stopPropagation();
+
+    if (String(selectedDatabase).startsWith('sqlite')) {
+      const parts = String(selectedDatabase).split('/');
+      const filename = parts[parts.length - 1];
+
+      toast.info(`Downloading ${filename}...`);
+      setExporting(dbName);
+
+      try {
+        const response = await apiClient.get(`/api/files/download/${filename}`, { responseType: 'blob' });
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        toast.success(`Downloaded ${filename}`);
+      } catch (error) {
+        console.error('Download error:', error);
+        toast.error('Download failed');
+      } finally {
+        setExporting(null);
+      }
+      return;
+    }
+
     setExportModal({ show: true, dbName });
   };
 
@@ -719,8 +756,8 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
                                                     <span className="truncate" data-tooltip={col.name}>
                                                       {truncateText(col.name, 10)}
                                                     </span>
-                                                    {col.isPk && <Key size={10} className="pk-icon" title="Primary Key" />}
-                                                    {col.isFk && <Link size={10} className="fk-icon" title="Foreign Key" />}
+                                                    {col.isPk && <Key size={10} className="pk-icon" data-tooltip="Primary Key" />}
+                                                    {col.isFk && <Link size={10} className="fk-icon" data-tooltip="Foreign Key" />}
                                                   </span>
                                                   <span className="col-type" data-tooltip={col.type}>
                                                     {truncateText(displayType, 10)}

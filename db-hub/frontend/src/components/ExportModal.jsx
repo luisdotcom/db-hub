@@ -246,7 +246,7 @@ const ExportModal = ({ isOpen, onClose, onExport, databaseName, databaseType, cu
                                                     onClick={() => handleToggleItem(activeTab, name)}
                                                 >
                                                     {isSelected ? <CheckSquare size={18} color="var(--primary)" /> : <Square size={18} color="var(--text-muted)" />}
-                                                    <span className="object-name" title={name}>{name}</span>
+                                                    <span className="object-name" data-tooltip={name}>{name}</span>
                                                 </div>
                                             );
                                         })}

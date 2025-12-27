@@ -486,7 +486,7 @@ END;`
           <button
             className="execute-button"
             onClick={handleExecute}
-            title={!selectedDatabase ? "Select a database to execute queries" : !query.trim() ? "Enter a query to execute" : ""}
+            data-tooltip={!selectedDatabase ? "Select a database to execute queries" : !query.trim() ? "Enter a query to execute" : ""}
             disabled={!query.trim() || !selectedDatabase || isExecuting}
           >
             {isExecuting ? (

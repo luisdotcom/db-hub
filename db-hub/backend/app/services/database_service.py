@@ -194,6 +194,8 @@ class DatabaseService:
                     dialect = DatabaseType.POSTGRES
                 elif 'mssql' in connection_string:
                     dialect = DatabaseType.SQLSERVER
+                elif 'sqlite' in connection_string:
+                    dialect = DatabaseType.SQLITE
                 else:
                     dialect = DatabaseType.MYSQL 
             else:
@@ -205,7 +207,10 @@ class DatabaseService:
                 if dialect == DatabaseType.MYSQL:
                     connection.execute(text(f"DROP DATABASE `{database_name}`"))
                     connection.commit()
-                    
+                
+                elif dialect == DatabaseType.SQLITE:
+                    raise QueryExecutionError("Cannot drop SQLite database via SQL. Please delete the file.")
+                
                 elif dialect == DatabaseType.POSTGRES:
                     conn = connection.execution_options(isolation_level="AUTOCOMMIT")
                     conn.execute(text(f"""

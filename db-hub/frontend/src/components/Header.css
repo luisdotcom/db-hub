@@ -195,7 +195,7 @@
   overflow: hidden;
   z-index: 1000;
   animation: dropdownSlide var(--transition-normal) ease-out;
-  max-height: 400px;
+  max-height: calc(100vh - 100px);
   overflow-y: auto;
 }
 

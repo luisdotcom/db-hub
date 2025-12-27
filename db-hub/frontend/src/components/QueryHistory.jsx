@@ -72,7 +72,7 @@ const QueryHistory = ({ isOpen, onClose, onSelectQuery }) => {
                             <button
                                 className="clear-btn"
                                 onClick={() => setShowClearModal(true)}
-                                title="Clear History"
+                                data-tooltip="Clear History"
                             >
                                 <Trash2 size={16} />
                             </button>
@@ -103,7 +103,7 @@ const QueryHistory = ({ isOpen, onClose, onSelectQuery }) => {
                                         <button
                                             className="delete-item-btn"
                                             onClick={(e) => handleDeleteItem(e, entry.id)}
-                                            title="Delete Item"
+                                            data-tooltip="Delete Item"
                                         >
                                             <Trash2 size={12} />
                                         </button>
@@ -124,7 +124,7 @@ const QueryHistory = ({ isOpen, onClose, onSelectQuery }) => {
                                             </span>
                                         )}
                                     </div>
-                                    <button className="restore-btn" title="Run Query">
+                                    <button className="restore-btn" data-tooltip="Run Query">
                                         <Play size={14} />
                                     </button>
                                 </li>
