@@ -1,24 +1,42 @@
 # DB-Hub
 
-A modern, unified database management system for containerized databases (MySQL, PostgreSQL, SQL Server) with a professional web interface. Designed for portable and reproducible development environments.
+**The Universal Database Explorer for Modern Development.**
+
+A professional, unified interface for managing databases across local Docker containers, remote servers, and SQLite files.
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
+![PWA Ready](https://img.shields.io/badge/PWA-Ready-purple.svg)
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)
 
-<img width="2000" height="1000" alt="Document" src="https://github.com/user-attachments/assets/82a27020-7c0d-4745-9f31-8be3bd3c05de" />
+<img width="2000" height="1000" alt="Preview" src="https://github.com/user-attachments/assets/62afa0a5-8b08-4929-90ba-3df346ae6e81" />
+
+## Why DB-Hub?
+
+Most database clients are clunky desktop apps. DB-Hub is a modern **Progressive Web App (PWA)** that runs anywhere:
+
+- **Universal Connectivity**: Connect to **MySQL**, **PostgreSQL**, **SQL Server**, and **SQLite**.
+- **Hybrid Workflow**: Seamlessly switch between auto-provisioned local containers (Docker) and your own custom remote connections.
+- **Zero-Config Environments**: Spin up a full stack with one command (`docker-compose up`).
 
 ## Features
 
-- **Multi-Database Support**: Connect to MySQL, PostgreSQL, and SQL Server
-- **Use Autononous Containers**: The system automatically spins up pre-configured Docker containers for each database type by default, ensuring a ready-to-use environment out of the box.
-- **Secure Authentication**: Built-in login system with session management and HTTP-only cookies
-- **Modern Web Interface**: Clean, responsive React-based UI with dark/light theme support
-- **Progressive Web App (PWA)**: Installable as a native-like app with offline capabilities
-- **Query Editor**: Syntax highlighting, automatic formatting, and sample queries for quick testing
-- **Real-time Results**: Execute queries and view results in formatted tables
-- **Database Export**: Export your databases to SQL files with a single click
-- **Docker-Ready**: Full-stack Docker Compose setup (Frontend, Backend, Databases)
-- **RESTful API**: FastAPI backend with automatic OpenAPI documentation
+### Universal Database Support
+- **Multi-Engine**: Native support for MySQL, PostgreSQL, SQL Server.
+- **SQLite Manager**: Full-featured file manager for SQLite. Upload, create, download, and query `.db` files directly from the browser.
+- **Custom Connections**: Connect to any external database instance (AWS RDS, Remote VPS, Localhost) using standard connection strings.
+
+### Professional Query Interface
+- **Advanced Editor**: Syntax highlighting, auto-formatting, and intelligent suggestions.
+- **Query History**: Automatically saves your execution history. Restore and rerun past queries with one click.
+- **Inline Editing**: Edit, update, and delete table rows directly within the results grid, **without writing SQL**.
+- **Real-time Results**: Fast, sortable, and searchable result tables.
+
+### Premium User Experience
+- **Modern UI**: Polished React interface with smooth animations and a carefully crafted Dark/Light theme.
+- **PWA Standard**: Install as a native desktop app. Works offline.
+- **Secure**: Built-in authentication with session management.
+- **Developer First**: Docker-ready, export capabilities, and REST API documentation included.
 
 ## Architecture
 
