@@ -185,14 +185,18 @@ const QueryResults = ({ result, error, isCollapsed, onToggleCollapse, onUpdateRo
             </div>
           )}
           <div className="export-buttons">
-            <button className="export-btn" onClick={exportToJSON} data-tooltip="Export as JSON" disabled={!result?.rows || error || !result?.success}>
-              <FileDown size={16} />
-              <span>JSON</span>
-            </button>
-            <button className="export-btn" onClick={exportToExcel} data-tooltip="Export as CSV" disabled={!result?.rows || error || !result?.success}>
-              <FileDown size={16} />
-              <span>CSV</span>
-            </button>
+            {result?.rows?.length > 0 && (
+              <>
+                <button className="export-btn" onClick={exportToJSON} data-tooltip="Export as JSON" disabled={error || !result?.success}>
+                  <FileDown size={16} />
+                  <span>JSON</span>
+                </button>
+                <button className="export-btn" onClick={exportToExcel} data-tooltip="Export as CSV" disabled={error || !result?.success}>
+                  <FileDown size={16} />
+                  <span>CSV</span>
+                </button>
+              </>
+            )}
             <button
               className="export-btn"
               onClick={onToggleCollapse}

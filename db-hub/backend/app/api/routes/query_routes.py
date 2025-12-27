@@ -120,6 +120,19 @@ async def get_tables(database_type: DatabaseType) -> List[str]:
         )
 
 
+@router.get("/schema/summary/{database_type}")
+async def get_schema_summary(database_type: DatabaseType, connection_string: str = None):
+    try:
+        summary = database_service.get_schema_summary(database_type, connection_string)
+        return summary
+    except Exception as e:
+        logger.error(f"Error getting schema summary: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve schema summary: {str(e)}"
+        )
+
+
 @router.get("/schema/{database_type}/{table_name}")
 async def get_table_schema(database_type: DatabaseType, table_name: str, connection_string: str = None):
     try:

@@ -461,7 +461,6 @@ const DatabaseExplorer = ({ selectedDatabase, customConnection, databaseName, on
           <button
             className="refresh-button"
             onClick={() => setShowConnectionModal(true)}
-            style={{ marginRight: '8px' }}
             data-tooltip="View Connection String"
           >
             <Link size={16} />

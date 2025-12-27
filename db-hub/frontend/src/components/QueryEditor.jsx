@@ -1,18 +1,66 @@
 
-import { useState, useEffect, useRef } from 'react';
-import { Play, Loader, FileText, Table, Eye, Zap, Code, ChevronUp, ChevronDown, AlignLeft, Plus, MoreVertical, Save, FolderOpen, Clock } from 'lucide-react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { Play, Loader, FileText, Table, Eye, Zap, Code, ChevronUp, ChevronDown, AlignLeft, Plus, MoreVertical, Save, FolderOpen, Clock, Palette } from 'lucide-react';
 import { format } from 'sql-formatter';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import CodeMirror from '@uiw/react-codemirror';
+import { sql, MySQL, PostgreSQL, StandardSQL } from '@codemirror/lang-sql';
+import { autocompletion, acceptCompletion, completionKeymap } from '@codemirror/autocomplete';
+import { keymap } from '@codemirror/view';
+import { Prec } from '@codemirror/state';
+import { githubLight, githubDark } from '@uiw/codemirror-theme-github';
+import { dracula } from '@uiw/codemirror-theme-dracula';
+import { nord } from '@uiw/codemirror-theme-nord';
+import { xcodeLight, xcodeDark } from '@uiw/codemirror-theme-xcode';
+import { eclipse } from '@uiw/codemirror-theme-eclipse';
+import { vscodeDark } from '@uiw/codemirror-theme-vscode';
+import { getSchemaSummary, getConnectionStringForDb } from '../services/databaseService';
 import './QueryEditor.css';
 
-const QueryEditor = ({ onExecute, isExecuting, selectedDatabase, externalQuery, onQueryChange, isCollapsed, onToggleCollapse, onHistoryClick }) => {
+const QueryEditor = ({ onExecute, isExecuting, selectedDatabase, externalQuery, onQueryChange, isCollapsed, onToggleCollapse, onHistoryClick, connectionString, databaseName }) => {
   const [query, setQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [schemaSummary, setSchemaSummary] = useState({});
+  const [theme, setTheme] = useState('dark');
+  const [editorTheme, setEditorTheme] = useState('vscodeDark');
+  const [isThemeDropdownOpen, setIsThemeDropdownOpen] = useState(false);
 
-  const textareaRef = useRef(null);
-  const highlighterRef = useRef(null);
+  const THEMES = {
+    vscodeDark: { name: 'VS Code Dark', theme: vscodeDark, type: 'dark' },
+    githubLight: { name: 'GitHub Light', theme: githubLight, type: 'light' },
+    githubDark: { name: 'GitHub Dark', theme: githubDark, type: 'dark' },
+    dracula: { name: 'Dracula', theme: dracula, type: 'dark' },
+    nord: { name: 'Nord', theme: nord, type: 'dark' },
+    xcodeLight: { name: 'Xcode Light', theme: xcodeLight, type: 'light' },
+    xcodeDark: { name: 'Xcode Dark', theme: xcodeDark, type: 'dark' },
+    eclipse: { name: 'Eclipse', theme: eclipse, type: 'light' },
+  };
+
+  const coreDbType = useMemo(() => {
+    if (connectionString) {
+      if (connectionString.includes('postgres') || connectionString.includes('psycopg2')) return 'postgres';
+      if (connectionString.includes('sqlserver') || connectionString.includes('mssql') || connectionString.includes('pyodbc')) return 'sqlserver';
+      return 'mysql';
+    }
+    if (selectedDatabase === 'postgres') return 'postgres';
+    if (selectedDatabase === 'sqlserver') return 'sqlserver';
+    return 'mysql';
+  }, [selectedDatabase, connectionString]);
+
+  useEffect(() => {
+    const fetchSchema = async () => {
+      if (selectedDatabase) {
+        try {
+          const dbSpecificConnString = connectionString ? getConnectionStringForDb(connectionString, databaseName) : null;
+
+          const summary = await getSchemaSummary(coreDbType, dbSpecificConnString);
+          setSchemaSummary(summary);
+        } catch (error) {
+          console.error("Failed to fetch schema summary", error);
+        }
+      }
+    };
+    fetchSchema();
+  }, [selectedDatabase, connectionString, databaseName, coreDbType]);
 
   useEffect(() => {
     if (externalQuery) {
@@ -26,21 +74,31 @@ const QueryEditor = ({ onExecute, isExecuting, selectedDatabase, externalQuery, 
       if (isDropdownOpen && !event.target.closest('.dropdown-container')) {
         setIsDropdownOpen(false);
       }
+      if (isThemeDropdownOpen && !event.target.closest('.theme-dropdown-container')) {
+        setIsThemeDropdownOpen(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isDropdownOpen]);
+  }, [isDropdownOpen, isThemeDropdownOpen]);
 
-  const [theme, setTheme] = useState('dark');
 
   useEffect(() => {
+    const getStoredTheme = (mode) => localStorage.getItem(`dbhub_editor_theme_${mode}`);
+
     const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
     setTheme(currentTheme);
+
+    const stored = getStoredTheme(currentTheme);
+    setEditorTheme(stored || (currentTheme === 'dark' ? 'vscodeDark' : 'githubLight'));
 
     const observer = new MutationObserver(() => {
       const newTheme = document.documentElement.getAttribute('data-theme') || 'dark';
       setTheme(newTheme);
+
+      const storedNew = getStoredTheme(newTheme);
+      setEditorTheme(storedNew || (newTheme === 'dark' ? 'vscodeDark' : 'githubLight'));
     });
 
     observer.observe(document.documentElement, {
@@ -62,26 +120,14 @@ const QueryEditor = ({ onExecute, isExecuting, selectedDatabase, externalQuery, 
       e.preventDefault();
       handleExecute();
     }
-
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const start = e.target.selectionStart;
-      const end = e.target.selectionEnd;
-      const newValue = query.substring(0, start) + '  ' + query.substring(end);
-      setQuery(newValue);
-
-      setTimeout(() => {
-        e.target.selectionStart = e.target.selectionEnd = start + 2;
-      }, 0);
-    }
   };
 
   const handleFormat = () => {
     if (!query.trim()) return;
     try {
       const formatted = format(query, {
-        language: selectedDatabase === 'postgres' ? 'postgresql' :
-          selectedDatabase === 'sqlserver' ? 'transactsql' : 'mysql',
+        language: coreDbType === 'postgres' ? 'postgresql' :
+          coreDbType === 'sqlserver' ? 'transactsql' : 'mysql',
         keywordCase: 'upper',
       });
 
@@ -223,9 +269,7 @@ END;`
   };
 
   const loadTemplate = (type) => {
-    const dbType = selectedDatabase === 'sqlserver' ? 'sqlserver' :
-      selectedDatabase === 'postgres' ? 'postgres' : 'mysql';
-    const template = sqlTemplates[type]?.[dbType] || sqlTemplates[type]?.mysql || '';
+    const template = sqlTemplates[type]?.[coreDbType] || sqlTemplates[type]?.mysql || '';
     setQuery(template);
     setIsDropdownOpen(false);
   };
@@ -254,21 +298,63 @@ END;`
     e.target.value = null;
   };
 
-  const handleScroll = (e) => {
-    if (highlighterRef.current) {
-      highlighterRef.current.scrollTop = e.target.scrollTop;
-      highlighterRef.current.scrollLeft = e.target.scrollLeft;
-    }
-  };
+  const extensions = useMemo(() => {
+    const dialect = coreDbType === 'postgres' ? PostgreSQL : coreDbType === 'sqlserver' ? StandardSQL : MySQL;
+
+    const customKeymap = Prec.highest(keymap.of([
+      { key: "Tab", run: acceptCompletion },
+      ...completionKeymap.filter(k => k.key !== 'Enter')
+    ]));
+
+    return [
+      sql({
+        schema: schemaSummary,
+        dialect: dialect,
+        upperCaseKeywords: true
+      }),
+      autocompletion({ defaultKeymap: false }),
+      customKeymap
+    ];
+  }, [schemaSummary, coreDbType]);
+
 
   return (
     <div className="query-editor">
       <div className="editor-header">
         <h2 className="editor-title">
           <FileText size={20} />
-          SQL Query
+          <span>SQL Query</span>
         </h2>
         <div className="help-buttons">
+          <div className="dropdown-container theme-dropdown-container">
+            <button
+              className="help-btn"
+              onClick={() => setIsThemeDropdownOpen(!isThemeDropdownOpen)}
+              data-tooltip="Editor Theme"
+            >
+              <Palette size={16} />
+              <span>Theme</span>
+            </button>
+            {isThemeDropdownOpen && (
+              <div className="dropdown-menu">
+                {Object.entries(THEMES)
+                  .filter(([_, t]) => t.type === theme)
+                  .map(([key, t]) => (
+                    <button
+                      key={key}
+                      className={`dropdown-item ${editorTheme === key ? 'active' : ''}`}
+                      onClick={() => {
+                        setEditorTheme(key);
+                        localStorage.setItem(`dbhub_editor_theme_${theme}`, key);
+                        setIsThemeDropdownOpen(false);
+                      }}
+                    >
+                      <span>{t.name}</span>
+                    </button>
+                  ))}
+              </div>
+            )}
+          </div>
           <div className="dropdown-container">
             <input
               type="file"
@@ -366,45 +452,34 @@ END;`
           </div>
         </div>
       </div>
-      {!isCollapsed && (
-        <div className="code-editor-container">
-          <div className="syntax-highlighter-wrapper" ref={highlighterRef}>
-            <SyntaxHighlighter
-              language="sql"
-              style={theme === 'dark' ? vscDarkPlus : vs}
-              customStyle={{
-                margin: 0,
-                padding: '1rem',
-                backgroundColor: 'transparent',
-                borderRadius: '8px',
-                fontSize: '0.9rem',
-                lineHeight: '1.6',
-                minHeight: '100%',
-                whiteSpace: 'pre',
-                fontFamily: "'Consolas', 'Monaco', 'Courier New', monospace"
+      {
+        !isCollapsed && (
+          <div className="code-editor-container" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <CodeMirror
+              value={query}
+              height="100%"
+              theme={THEMES[editorTheme]?.theme || vscodeDark}
+              extensions={extensions}
+              onChange={(value) => setQuery(value)}
+              onKeyDown={handleKeyDown}
+              className="codemirror-editor"
+              basicSetup={{
+                lineNumbers: true,
+                foldGutter: true,
+                dropCursor: true,
+                allowMultipleSelections: true,
+                indentOnInput: true,
+                bracketMatching: true,
+                closeBrackets: true,
+                autocompletion: false,
+                highlightActiveLine: true,
+                highlightSelectionMatches: true,
               }}
-              codeTagProps={{
-                style: {
-                  fontFamily: "'Consolas', 'Monaco', 'Courier New', monospace"
-                }
-              }}
-            >
-              {query || ' '}
-            </SyntaxHighlighter>
+              style={{ fontSize: '14px', height: '100%' }}
+            />
           </div>
-          <textarea
-            ref={textareaRef}
-            className="query-textarea-overlay"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onScroll={handleScroll}
-            placeholder=""
-            disabled={!selectedDatabase}
-            spellCheck={false}
-          />
-        </div>
-      )}
+        )
+      }
       <div className="editor-footer">
         <span className="hint">Press Ctrl+Enter to execute</span>
         <div className="footer-actions">
@@ -429,7 +504,7 @@ END;`
 
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 

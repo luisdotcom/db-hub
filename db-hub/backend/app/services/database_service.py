@@ -606,4 +606,68 @@ class DatabaseService:
 
 
 
+    def get_schema_summary(self, db_type: DatabaseType, connection_string: Optional[str] = None) -> Dict[str, List[str]]:
+        try:
+            if db_type == DatabaseType.CUSTOM and connection_string:
+                engine = create_engine(
+                    connection_string,
+                    pool_pre_ping=True,
+                    pool_size=settings.db_pool_size,
+                    max_overflow=settings.db_max_overflow,
+                    pool_recycle=settings.db_pool_recycle,
+                    pool_timeout=settings.db_pool_timeout,
+                    execution_options={"timeout": settings.db_query_timeout}
+                )
+            else:
+                engine = self._get_engine(db_type)
+            
+            summary = {}
+            with engine.connect() as connection:
+                if db_type == DatabaseType.MYSQL or (db_type == DatabaseType.CUSTOM and 'mysql' in str(engine.url)):
+                    result = connection.execute(text("""
+                        SELECT TABLE_NAME, COLUMN_NAME 
+                        FROM information_schema.COLUMNS 
+                        WHERE TABLE_SCHEMA = DATABASE()
+                        ORDER BY TABLE_NAME, COLUMN_NAME
+                    """))
+                    for row in result:
+                        table = row[0]
+                        column = row[1]
+                        if table not in summary:
+                            summary[table] = []
+                        summary[table].append(column)
+                        
+                elif db_type == DatabaseType.POSTGRES or (db_type == DatabaseType.CUSTOM and 'postgres' in str(engine.url)):
+                    result = connection.execute(text("""
+                        SELECT table_name, column_name
+                        FROM information_schema.columns
+                        WHERE table_schema = 'public'
+                        ORDER BY table_name, column_name
+                    """))
+                    for row in result:
+                        table = row[0]
+                        column = row[1]
+                        if table not in summary:
+                            summary[table] = []
+                        summary[table].append(column)
+                        
+                elif db_type == DatabaseType.SQLSERVER or (db_type == DatabaseType.CUSTOM and 'mssql' in str(engine.url)):
+                    result = connection.execute(text("""
+                        SELECT t.name AS table_name, c.name AS column_name
+                        FROM sys.tables t
+                        JOIN sys.columns c ON t.object_id = c.object_id
+                        ORDER BY t.name, c.name
+                    """))
+                    for row in result:
+                        table = row[0]
+                        column = row[1]
+                        if table not in summary:
+                            summary[table] = []
+                        summary[table].append(column)
+                
+            return summary
+        except Exception as e:
+            logger.error(f"Failed to get schema summary for {db_type.value}: {str(e)}")
+            return {}
+
 database_service = DatabaseService()

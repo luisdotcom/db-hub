@@ -315,6 +315,8 @@ function AppContent() {
               isCollapsed={editorCollapsed}
               onToggleCollapse={toggleEditor}
               onHistoryClick={() => setShowHistory(true)}
+              connectionString={selectedDatabase && typeof selectedDatabase === 'string' && selectedDatabase.startsWith('custom_') ? customConnection : null}
+              databaseName={currentDbName}
             />
             <QueryResults
               result={queryResult}

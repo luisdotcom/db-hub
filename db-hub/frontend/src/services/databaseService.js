@@ -296,3 +296,12 @@ export const getForeignKeys = async (databaseType, tableName, connectionString =
   const response = await apiClient.get(url);
   return response.data;
 };
+
+export const getSchemaSummary = async (databaseType, connectionString = null) => {
+  let url = `/api/query/schema/summary/${databaseType}`;
+  if (connectionString) {
+    url += `?connection_string=${encodeURIComponent(connectionString)}`;
+  }
+  const response = await apiClient.get(url);
+  return response.data;
+};
