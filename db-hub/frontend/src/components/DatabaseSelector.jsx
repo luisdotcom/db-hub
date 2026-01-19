@@ -175,11 +175,11 @@ const DatabaseSelector = ({ selectedDatabase, onDatabaseChange, customConnection
             className="connection-string-input"
             value={customConnection}
             onChange={(e) => onCustomConnectionChange(e.target.value)}
-            placeholder="Enter SQLAlchemy connection string&#10;Example: postgresql://user:pass@host:port/database&#10;Or: mysql+pymysql://user:pass@host:port/database"
+            placeholder="Enter SQLAlchemy connection string&#10;Example: postgresql+psycopg2://user:pass@host:5432/database&#10;Or: mysql+pymysql://user:pass@host:3306/database"
             rows={4}
           />
           <p className="form-hint">
-            Enter a valid SQLAlchemy connection string. Supports any database with SQLAlchemy driver.
+            Enter a valid SQLAlchemy connection string with driver. Supports PostgreSQL, MySQL, SQL Server, SQLite, etc.
           </p>
         </div>
       )}

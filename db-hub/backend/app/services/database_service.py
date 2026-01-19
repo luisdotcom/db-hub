@@ -36,10 +36,20 @@ class DatabaseService:
         else:
             raise InvalidDatabaseTypeError(f"Unsupported database type: {db_type}")
     
+    def _normalize_connection_string(self, connection_string: str) -> str:
+        if connection_string.startswith('postgres://'):
+            return connection_string.replace('postgres://', 'postgresql+psycopg2://', 1)
+        elif connection_string.startswith('postgresql://'):
+            return connection_string.replace('postgresql://', 'postgresql+psycopg2://', 1)
+        elif connection_string.startswith('mysql://'):
+            return connection_string.replace('mysql://', 'mysql+pymysql://', 1)
+        return connection_string
+    
     def _get_engine(self, db_type: DatabaseType, connection_string: Optional[str] = None) -> Engine:
         if connection_string:
+            normalized_string = self._normalize_connection_string(connection_string)
             return create_engine(
-                connection_string,
+                normalized_string,
                 pool_pre_ping=True,
                 pool_size=settings.db_pool_size,
                 max_overflow=settings.db_max_overflow,
@@ -86,8 +96,9 @@ class DatabaseService:
         try:
 
             if db_type == DatabaseType.CUSTOM and connection_string:
+                normalized_string = self._normalize_connection_string(connection_string)
                 engine = create_engine(
-                    connection_string,
+                    normalized_string,
                     pool_pre_ping=True,
                     pool_size=settings.db_pool_size,
                     max_overflow=settings.db_max_overflow,
@@ -179,8 +190,9 @@ class DatabaseService:
     def delete_database(self, db_type: DatabaseType, database_name: str, connection_string: Optional[str] = None) -> bool:
         try:
             if db_type == DatabaseType.CUSTOM and connection_string:
+                normalized_string = self._normalize_connection_string(connection_string)
                 engine = create_engine(
-                    connection_string,
+                    normalized_string,
                     pool_pre_ping=True,
                     pool_size=settings.db_pool_size,
                     max_overflow=settings.db_max_overflow,
@@ -320,8 +332,9 @@ class DatabaseService:
     def get_primary_keys(self, db_type: DatabaseType, table_name: str, connection_string: Optional[str] = None) -> List[str]:
         try:
             if db_type == DatabaseType.CUSTOM and connection_string:
+                normalized_string = self._normalize_connection_string(connection_string)
                 engine = create_engine(
-                    connection_string,
+                    normalized_string,
                     pool_pre_ping=True,
                     pool_size=settings.db_pool_size,
                     max_overflow=settings.db_max_overflow,
@@ -342,8 +355,9 @@ class DatabaseService:
     def get_foreign_keys(self, db_type: DatabaseType, table_name: str, connection_string: Optional[str] = None) -> List[Dict[str, Any]]:
         try:
             if db_type == DatabaseType.CUSTOM and connection_string:
+                normalized_string = self._normalize_connection_string(connection_string)
                 engine = create_engine(
-                    connection_string,
+                    normalized_string,
                     pool_pre_ping=True,
                     pool_size=settings.db_pool_size,
                     max_overflow=settings.db_max_overflow,
@@ -363,8 +377,9 @@ class DatabaseService:
     def get_indexes(self, db_type: DatabaseType, table_name: str, connection_string: Optional[str] = None) -> List[Dict[str, Any]]:
         try:
             if db_type == DatabaseType.CUSTOM and connection_string:
+                normalized_string = self._normalize_connection_string(connection_string)
                 engine = create_engine(
-                    connection_string,
+                    normalized_string,
                     pool_pre_ping=True,
                     pool_size=settings.db_pool_size,
                     max_overflow=settings.db_max_overflow,
@@ -394,8 +409,9 @@ class DatabaseService:
                 raise ValueError("Primary key data is required for updates")
 
             if db_type == DatabaseType.CUSTOM and connection_string:
+                normalized_string = self._normalize_connection_string(connection_string)
                 engine = create_engine(
-                    connection_string,
+                    normalized_string,
                     pool_pre_ping=True,
                     pool_size=settings.db_pool_size,
                     max_overflow=settings.db_max_overflow,
@@ -438,8 +454,9 @@ class DatabaseService:
                 raise ValueError("Primary key data is required for deletion")
                 
             if db_type == DatabaseType.CUSTOM and connection_string:
+                normalized_string = self._normalize_connection_string(connection_string)
                 engine = create_engine(
-                    connection_string,
+                    normalized_string,
                     pool_pre_ping=True,
                     pool_size=settings.db_pool_size,
                     max_overflow=settings.db_max_overflow,
@@ -568,8 +585,9 @@ class DatabaseService:
     def get_database_version(self, db_type: DatabaseType, connection_string: Optional[str] = None) -> str:
         try:
             if db_type == DatabaseType.CUSTOM and connection_string:
+                normalized_string = self._normalize_connection_string(connection_string)
                 engine = create_engine(
-                    connection_string,
+                    normalized_string,
                     pool_pre_ping=True,
                     pool_size=settings.db_pool_size,
                     max_overflow=settings.db_max_overflow,
@@ -614,8 +632,9 @@ class DatabaseService:
     def get_schema_summary(self, db_type: DatabaseType, connection_string: Optional[str] = None) -> Dict[str, List[str]]:
         try:
             if db_type == DatabaseType.CUSTOM and connection_string:
+                normalized_string = self._normalize_connection_string(connection_string)
                 engine = create_engine(
-                    connection_string,
+                    normalized_string,
                     pool_pre_ping=True,
                     pool_size=settings.db_pool_size,
                     max_overflow=settings.db_max_overflow,
